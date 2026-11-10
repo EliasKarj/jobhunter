@@ -20,6 +20,13 @@ function loadF(): F {
 }
 
 function posted(r: Row) { return r.job.detail?.posted || r.first_seen || ""; }
+/** Uusi = haku löysi ilmoituksen tänään tai eilen JA se on julkaistu enintään 3 päivää sitten. Pelkkä löytöpäivä
+ *  merkitsi uudeksi myös kuukausia vanhoja ilmoituksia, kun haku laajeni (esim. sivukartan ensimmäinen ajo). */
+function isNew(r: Row) {
+  if (!r.first_seen || (daysAgo(r.first_seen) ?? 99) > 1) return false;
+  const p = r.job.detail?.posted;
+  return !p || (daysAgo(p) ?? 0) <= 3;
+}
 
 /** Ilmoitus, jota haku ei löydä (esim. yrityksen omalta sivulta): pisteytetään samoin kuin muut. */
 function ManualJobDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -169,7 +176,7 @@ export default function Dashboard() {
   if (jobs.error) return <ErrorNotice error={jobs.error} title="Ilmoituksia ei saatu ladattua" retry={() => jobs.refetch()} />;
 
   const strong = list.filter((r) => r.score >= 70).length;
-  const fresh = list.filter((r) => r.first_seen && daysAgo(r.first_seen)! <= 1).length;
+  const fresh = list.filter(isNew).length;
 
   const hybClass = (v?: number) => (v == null ? "" : v >= 80 ? " strong" : v >= 60 ? " mid" : "");
   const areaLabel = f.areas.length === 0 ? "Kaikki kaupungit" : f.areas.length === 1 ? f.areas[0] : `${f.areas.length} kaupunkia`;
@@ -258,7 +265,7 @@ export default function Dashboard() {
             {visible.map((r, i) => {
               const app = appByUrl.get(r.job.url);
               const st = state[r.job.url] || {};
-              const isNew = r.first_seen && daysAgo(r.first_seen)! <= 1;
+              const fresh1 = isNew(r);
               const kw = r.score_keyword ?? r.score;
               return (
                 <li key={r.job.url} id={`row-${i}`} className={"job-row" + (i === sel ? " sel" : "") + (st.hidden ? " hidden-job" : "")}
@@ -270,7 +277,7 @@ export default function Dashboard() {
                       <span>{r.job.location}</span>
                       {posted(r) && <span className="mono" style={{ fontSize: 12 }}>{shortDate(posted(r))}</span>}
                       <span className="tagline">
-                        {isNew && <span className="tag new">Uusi</span>}
+                        {fresh1 && <span className="tag new">Uusi</span>}
                         {app && <span className="tag good">{STATUS_LABEL[app.status]}</span>}
                         {st.saved && !app && <span className="tag">Tallennettu</span>}
                         {jobs.data?.gone[r.job.url] && <span className="tag stamp">Poistunut</span>}
