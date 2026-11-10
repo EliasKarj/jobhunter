@@ -1306,4 +1306,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    # server.app tuo tämän moduulin nimellä "webapp": ilman tätä siitä tulisi toinen kopio, jonka CFG jää
+    # oletuksiin (--demo ja --port eivät välittyisi palvelimelle)
+    sys.modules.setdefault("webapp", sys.modules[__name__])
     main()
