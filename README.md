@@ -1,5 +1,7 @@
 # jobhunter
 
+[![Testit](https://github.com/EliasKarj/jobhunter/actions/workflows/tests.yml/badge.svg)](https://github.com/EliasKarj/jobhunter/actions/workflows/tests.yml)
+
 > **In English:** a personal job search assistant for the Finnish job market. It collects postings
 > (Duunitori sitemap, Kuntarekry), ranks them with keyword + semantic (RAG, `BAAI/bge-m3`, sqlite-vec)
 > + LLM fit scoring, and evaluates the ranking against hand-labelled data (P@10, NDCG@10). For applying,
@@ -7,7 +9,7 @@
 > simulator, recruiter, tech interviewer, hiring manager), writes application answers in the applicant's own
 > learned style, and fills portal forms via a browser extension. The core rule is that nothing is invented:
 > every claim is checked deterministically against the CV, and unsupported ones are flagged or rejected.
-> Python (FastAPI) + React/TypeScript, local models via Ollama or the Claude API. ~200 tests.
+> Python (FastAPI) + React/TypeScript, local models via Ollama or the Claude API. ~200 tests, run on every push (GitHub Actions).
 > Documentation is in Finnish; details in [docs/TEKNINEN.md](docs/TEKNINEN.md).
 
 Henkilökohtainen työnhakuavustaja: se etsii sopivat ilmoitukset, räätälöi CV:n jokaiseen paikkaan ja auttaa
@@ -107,7 +109,7 @@ Kuvat on otettu demotilassa keksityllä esimerkkihenkilöllä.
 ## Testit ja evaluointi
 
 ```powershell
-python -m pytest -q          # 197 testiä, eivät tee API-kutsuja eivätkä käytä omaa dataa
+python -m pytest -q          # 203 testiä, eivät tee API-kutsuja eivätkä käytä omaa dataa
 ```
 
 Rankingia on mitattu 89 käsin merkityllä ilmoituksella. Kärjen osuvuus (NDCG@10) oli avainsanoilla 0,66, hybridillä

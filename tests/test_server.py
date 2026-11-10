@@ -104,3 +104,61 @@ def test_style_samples_saved_by_id(client, tmp_path, monkeypatch):
     r = client.post("/api/style/save", json={"id": "fs1-1", "mine": "Oma versio."}, headers=H)
     assert r.status_code == 200 and r.json()["mine"] == "Oma versio." and r.json()["updated"]
     assert client.post("/api/style/save", json={"id": "x", "mine": "a"}, headers=H).status_code == 404
+
+
+def _index_db(path, indexed):
+    import sqlite3
+    with sqlite3.connect(path) as db:
+        db.execute("CREATE TABLE jobs (job_id INTEGER PRIMARY KEY, url TEXT)")
+        db.execute("CREATE TABLE job_index (job_id INTEGER)")
+        for i, u in enumerate(indexed, 1):
+            db.execute("INSERT INTO jobs VALUES (?, ?)", (i, u))
+            db.execute("INSERT INTO job_index VALUES (?)", (i,))
+
+
+def _resume_setup(tmp_path, monkeypatch, indexed, mode="hybrid"):
+    from rag import config as rag_config
+    from rag.config import Settings
+    db = tmp_path / "rag.sqlite"
+    _index_db(db, indexed)
+    monkeypatch.setattr(rag_config, "load", lambda: Settings(scoring_mode=mode, db_path=db))
+    monkeypatch.setattr(webapp, "LATEST", tmp_path / "latest.json")
+    rows = [{"status": "ok", "job": {"url": u}} for u in ("a", "b", "c")]
+    (tmp_path / "latest.json").write_text(json.dumps({"rows": rows}), encoding="utf-8")
+    monkeypatch.setitem(webapp.CFG, "demo", False)
+    calls = []
+    for name in ("update_semantic_index", "rescore", "update_llm_scores"):
+        monkeypatch.setattr(webapp, name, lambda n=name: calls.append(n))
+    monkeypatch.setattr(webapp, "status", {"running": False, "message": "", "error": None, "warning": None, "started": None})
+    return calls
+
+
+def test_resume_index_continues_interrupted_indexing(tmp_path, monkeypatch):
+    calls = _resume_setup(tmp_path, monkeypatch, indexed=["a"])
+    assert webapp.unindexed_count() == 2
+    webapp.resume_index()
+    assert calls == ["update_semantic_index", "rescore", "update_llm_scores", "rescore"]
+    assert webapp.status["running"] is False and webapp.status["error"] is None
+
+
+def test_resume_index_does_nothing_when_all_indexed_or_keyword_mode(tmp_path, monkeypatch):
+    calls = _resume_setup(tmp_path, monkeypatch, indexed=["a", "b", "c"])
+    webapp.resume_index()
+    assert calls == [] and webapp.unindexed_count() == 0
+
+
+def test_resume_index_skipped_in_keyword_mode_and_demo(tmp_path, monkeypatch):
+    calls = _resume_setup(tmp_path, monkeypatch, indexed=[], mode="keyword")
+    assert webapp.unindexed_count() == 0
+    monkeypatch.setitem(webapp.CFG, "demo", True)
+    webapp.resume_index()
+    assert calls == []
+
+
+def test_resume_index_reports_failure_and_releases_lock(tmp_path, monkeypatch):
+    _resume_setup(tmp_path, monkeypatch, indexed=[])
+    def boom():
+        raise RuntimeError("malli puuttuu")
+    monkeypatch.setattr(webapp, "update_semantic_index", boom)
+    webapp.resume_index()
+    assert webapp.status["running"] is False and "malli puuttuu" in webapp.status["error"]

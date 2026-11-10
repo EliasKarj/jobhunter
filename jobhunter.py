@@ -206,7 +206,7 @@ def search_duunitori(profile: dict, cache: Path, delay: float) -> list[Job]:
                 if n >= s.get("max_per_query", 15):
                     break
             print(f"  duunitori | {area:9} | {q}: {n} uutta ilmoitusta", file=sys.stderr)
-    if s.get("duunitori_mode", "crawl") == "sitemap":
+    if s.get("duunitori_mode", "sitemap") == "sitemap":  # oletus: kevyt sivukartta; vanha selaus vain erikseen (crawl)
         sitemap_duunitori(profile, cache, delay, found)
     elif s.get("broad", {}).get("enabled"):
         crawl_duunitori(profile, cache, delay, found)
@@ -811,7 +811,7 @@ def collect_jobs(prof: dict, delay: float = 1.5, progress=print, checkpoint=None
         # map palauttaa järjestyksessä, joten jobs[:i] on aina luettu
         # sivukarttatilassa samat ilmoitukset tulevat joka päivä: luettu sivu kelpaa 30 päivää (ilmoitus harvoin muuttuu,
         # ja poistunut ilmoitus putoaa sivukartasta), muuten viikon
-        age = float(prof["search"].get("detail_max_age_h", 720 if prof["search"].get("duunitori_mode") == "sitemap" else 168))
+        age = float(prof["search"].get("detail_max_age_h", 720 if prof["search"].get("duunitori_mode", "sitemap") == "sitemap" else 168))
         for i, _ in enumerate(ex.map(lambda j: enrich(j, cache, delay, age), jobs), 1):
             if i % 5 == 0 or i == len(jobs):
                 progress(f"Luetaan ilmoituksia {i}/{len(jobs)}")

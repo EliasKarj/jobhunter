@@ -247,3 +247,13 @@ def test_relative_paths_in_env_resolve_inside_data_dir(monkeypatch):
     monkeypatch.setenv("RAG_DB", "rag.sqlite")
     s = config.load()
     assert s.cv_path == config.DATA / "cv.md" and s.db_path == config.DATA / "rag.sqlite"
+
+
+def test_sitemap_is_default_duunitori_mode(monkeypatch, tmp_path):
+    """Profiili ilman duunitori_mode-asetusta ei saa selata hakusivuja (kuormitus): oletus on sivukartta."""
+    used = []
+    monkeypatch.setattr(jh, "sitemap_duunitori", lambda *a, **k: used.append("sitemap"))
+    monkeypatch.setattr(jh, "crawl_duunitori", lambda *a, **k: used.append("crawl"))
+    prof = {"search": {"queries": [], "areas": [], "broad": {"enabled": True}}}
+    jh.search_duunitori(prof, tmp_path, 0)
+    assert used == ["sitemap"]
