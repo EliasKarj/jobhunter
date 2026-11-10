@@ -161,6 +161,47 @@ def update_semantic_index() -> None:
         status["warning"] = f"Semanttisen indeksin päivitys epäonnistui ({e}). Pisteet laskettiin avainsanoilla."
 
 
+def unindexed_count() -> int:
+    """Tuloksissa olevat ilmoitukset, joita ei ole semanttisessa indeksissä (esim. keskeytynyt haku)."""
+    try:
+        import sqlite3
+        from rag import config as rag_config
+        s = rag_config.load()
+        if s.scoring_mode == "keyword" or not s.auto_ingest or CFG["demo"] or not s.db_path.exists():
+            return 0
+        urls = {r["job"]["url"] for r in _read(LATEST, {}).get("rows", []) if r.get("status") == "ok"}
+        with sqlite3.connect(s.db_path) as db:
+            have = {u for (u,) in db.execute("SELECT j.url FROM jobs j JOIN job_index i ON i.job_id = j.job_id")}
+        return len(urls - have)
+    except Exception as e:  # noqa: BLE001
+        print(f"! indeksin tarkistus epäonnistui: {e}", file=sys.stderr)
+        return 0
+
+
+def resume_index() -> None:
+    """Käynnistyksessä: jos edellisen haun indeksointi keskeytyi (palvelin käynnistettiin uudelleen kesken),
+    indeksoi puuttuvat taustalla, pisteytä uudelleen ja hae uusille sopivuusarvio. Näkyy kuin haku sivupalkissa."""
+    n = unindexed_count()
+    if not n:
+        return
+    with lock:
+        if status["running"]:
+            return
+        status.update(running=True, error=None, warning=None, message=f"Jatketaan keskeytynyttä indeksointia ({n} ilmoitusta)",
+                      started=dt.datetime.now().isoformat(timespec="seconds"))
+    try:
+        update_semantic_index()
+        rescore()
+        update_llm_scores()
+        rescore()
+        status["message"] = "Valmis"
+    except Exception as e:  # noqa: BLE001
+        status["error"] = str(e)
+        status["message"] = "Indeksoinnin jatkaminen epäonnistui"
+    finally:
+        status["running"] = False
+
+
 def rescore() -> None:
     """Pisteytä jo haetut ilmoitukset uudelleen nykyisellä profiililla ilman uutta hakua."""
     with write_lock:
@@ -1219,6 +1260,7 @@ def startup() -> None:
     except Exception as e:  # noqa: BLE001
         print(f"! uudelleenpisteytys epäonnistui: {e}", file=sys.stderr)
     threading.Thread(target=refresh_gaps, daemon=True).start()
+    threading.Thread(target=resume_index, daemon=True, name="resume-index").start()
 
 
 class Handler(BaseHTTPRequestHandler):
