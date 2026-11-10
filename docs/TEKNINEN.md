@@ -506,7 +506,7 @@ Testejä on yhteensä 197 (ja yksi `pytest -m live` -testi oikeaa API:a vastaan)
 ```mermaid
 flowchart LR
     subgraph Haku["Nykyinen putki (jobhunter.py)"]
-        D[Duunitori] -->|crawl| E[enrich: JSON-LD-kuvaus, yritys, päivät]
+        D[Duunitori] -->|sivukartta + otsikkosuodatin| E[enrich: JSON-LD-kuvaus, yritys, päivät]
         KR[Kuntarekry] -->|JSON| E
         E --> K[score_job: avainsanapisteet 0-100<br/>+ poissulut, hakuaika, kattorajat]
         K --> L[(results/latest.json)]
