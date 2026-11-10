@@ -65,6 +65,17 @@ CLAUDE_MODEL_WRITING=claude-sonnet-5-5   # CV:n räätälöinti, vastaukset, saa
 
 Tällä jaolla paneeliajo maksaa noin 0,05 $, hakemusvastaus muutamia senttejä ja päivittäinen pisteytys alle dollarin kuukaudessa. Asetukset voi vaihtaa myös sovelluksen Asetukset-sivulla.
 
+## Kuvia
+
+Kuvat on otettu demotilassa keksityllä esimerkkihenkilöllä.
+
+![Räätälöity CV arviointipaneelin jälkeen](docs/screenshots/cv.png)
+
+| | |
+|---|---|
+| ![Ilmoitukset](docs/screenshots/etusivu.png) | ![Ilmoitus](docs/screenshots/ilmoitus.png) |
+| ![Seuranta](docs/screenshots/seuranta.png) | ![Profiili](docs/screenshots/profiili.png) |
+
 ## Käyttö
 
 | Sivu | Mitä siellä tehdään |

@@ -10,7 +10,7 @@ import { ProgressBar } from "../progress";
 
 interface JobPayload {
   row: Row; app: App | null; state: { saved?: boolean; hidden?: boolean }; gone: string | null;
-  insights: { matched?: string[]; missing?: string[]; experience?: string[]; languages?: string[]; mode?: string[] };
+  insights: { matched?: (string | { name: string; weight: number })[]; missing?: string[]; experience?: string[]; languages?: string[]; mode?: string[] };
 }
 interface AiJob { clean_text: string; lang: string; posted: string; deadline: string }
 
@@ -229,7 +229,7 @@ export default function JobView() {
           <section>
             <h2>Tekniikat</h2>
             <table className="meta-table"><tbody>
-              {job.data!.insights.matched?.length ? <tr><th>Osaat</th><td>{job.data!.insights.matched.join(", ")}</td></tr> : null}
+              {job.data!.insights.matched?.length ? <tr><th>Osaat</th><td>{job.data!.insights.matched.map((m) => (typeof m === "string" ? m : m.name)).join(", ")}</td></tr> : null}
               {job.data!.insights.missing?.length ? <tr><th>Puuttuu</th><td>{job.data!.insights.missing.join(", ")}</td></tr> : null}
               {job.data!.insights.languages?.length ? <tr><th>Kielet</th><td>{job.data!.insights.languages.map((x, i) => <Fragment key={i}>{x}<br /></Fragment>)}</td></tr> : null}
             </tbody></table>
