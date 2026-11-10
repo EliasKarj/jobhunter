@@ -1,0 +1,106 @@
+{
+  "skills": [
+    {
+      "name": "TypeScript",
+      "aliases": [],
+      "weight": 3.0,
+      "level": "Hyvä",
+      "category": "Ohjelmointikielet",
+      "source": "esimerkki"
+    },
+    {
+      "name": "JavaScript",
+      "aliases": [],
+      "weight": 2.0,
+      "level": "Hyvä",
+      "category": "Ohjelmointikielet",
+      "source": "esimerkki"
+    },
+    {
+      "name": "Python",
+      "aliases": [],
+      "weight": 3.0,
+      "level": "Hyvä",
+      "category": "Ohjelmointikielet",
+      "source": "esimerkki"
+    },
+    {
+      "name": "SQL",
+      "aliases": [],
+      "weight": 2.0,
+      "level": "Hyvä",
+      "category": "Ohjelmointikielet",
+      "source": "esimerkki"
+    },
+    {
+      "name": "React",
+      "aliases": [],
+      "weight": 3.0,
+      "level": "Hyvä",
+      "category": "Web ja käyttöliittymät",
+      "source": "esimerkki"
+    },
+    {
+      "name": "Node.js",
+      "aliases": [
+        "nodejs"
+      ],
+      "weight": 2.0,
+      "level": "Hyvä",
+      "category": "Taustajärjestelmät ja tietokannat",
+      "source": "esimerkki"
+    },
+    {
+      "name": "FastAPI",
+      "aliases": [],
+      "weight": 1.0,
+      "level": "Perus",
+      "category": "Taustajärjestelmät ja tietokannat",
+      "source": "esimerkki"
+    },
+    {
+      "name": "PostgreSQL",
+      "aliases": [
+        "postgres"
+      ],
+      "weight": 2.0,
+      "level": "Hyvä",
+      "category": "Taustajärjestelmät ja tietokannat",
+      "source": "esimerkki"
+    },
+    {
+      "name": "Docker",
+      "aliases": [],
+      "weight": 3.0,
+      "level": "Hyvä",
+      "category": "Kontit ja pilvi",
+      "source": "esimerkki"
+    },
+    {
+      "name": "GitHub Actions",
+      "aliases": [],
+      "weight": 1.0,
+      "level": "Perus",
+      "category": "CI/CD",
+      "source": "esimerkki"
+    },
+    {
+      "name": "Linux",
+      "aliases": [],
+      "weight": 1.0,
+      "level": "Perus",
+      "category": "Linux ja skriptaus",
+      "source": "esimerkki"
+    },
+    {
+      "name": "Asiakaspalvelu",
+      "aliases": [
+        "customer service"
+      ],
+      "weight": 1.0,
+      "level": "Hyvä",
+      "category": "Muu",
+      "source": "esimerkki"
+    }
+  ]
+}

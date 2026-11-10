@@ -1,0 +1,1887 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Työnhaku</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F2F4F7;
+  --surface: #FFFFFF;
+  --ink: #172033;
+  --muted: #566176;
+  --line: #DFE4EB;
+  --line-strong: #C5CDD9;
+  --accent: #1F4FA3;
+  --accent-soft: #E6EDF9;
+  --high: #0B7A6B;
+  --mid: #1F4FA3;
+  --low: #6E7889;
+  --warn-bg: #FFF4E0;
+  --warn-ink: #7A4B00;
+  --err-bg: #FDEBEA;
+  --err-ink: #8A1F17;
+  --c-alue: #2F6FB5;
+  --c-osaaminen: #14907F;
+  --c-taso: #C9962F;
+  --c-ala: #7B879B;
+  --radius: 8px;
+  --font: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 15px/1.5 var(--font);
+}
+button, input, select { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+/* ---------- yläpalkki ---------- */
+.top {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 24px; background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.top-right { display: flex; align-items: center; gap: 16px; }
+#updated { color: var(--muted); font-size: 13px; text-align: right; }
+
+.btn {
+  border: 1px solid var(--line-strong); background: var(--surface);
+  padding: 7px 14px; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer;
+}
+.btn:hover { background: #F7F9FB; }
+.btn[disabled] { opacity: .65; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #1A438C; }
+.spinner {
+  display: none; width: 12px; height: 12px; margin-right: 8px; vertical-align: -1px;
+  border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+.is-running .spinner { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- ilmoitukset ---------- */
+#banner { max-width: 1160px; margin: 16px auto 0; padding: 0 24px; }
+.note {
+  padding: 10px 14px; border-radius: var(--radius); font-size: 14px;
+  border: 1px solid transparent; margin-bottom: 8px;
+}
+.note-info { background: var(--accent-soft); color: #173A78; border-color: #CCD9F1; }
+.note-warn { background: var(--warn-bg); color: var(--warn-ink); border-color: #F3DDB2; }
+.note-err { background: var(--err-bg); color: var(--err-ink); border-color: #F3C9C5; }
+.bar-run { height: 3px; margin-top: 8px; background: #CCD9F1; border-radius: 2px; overflow: hidden; }
+.bar-run::after {
+  content: ""; display: block; height: 100%; width: 35%; background: var(--accent);
+  animation: slide 1.4s ease-in-out infinite;
+}
+@keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+
+/* ---------- asettelu ---------- */
+.layout {
+  max-width: 1160px; margin: 0 auto; padding: 16px 24px 48px;
+  display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; align-items: start;
+}
+.rail {
+  position: sticky; top: 76px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 10px; padding: 4px 16px 8px;
+}
+.rail > summary { display: none; }
+.field { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.field:last-child { border-bottom: 0; }
+.field > label, .field > .lbl { display: block; font-weight: 600; font-size: 13px; margin-bottom: 8px; }
+.field > label.check { display: flex; font-weight: 400; margin: 0; }
+.field input[type="search"], .field select {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--line-strong);
+  border-radius: 6px; background: #fff;
+}
+.checks { display: grid; gap: 6px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+.check .n { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+.range { display: flex; align-items: center; gap: 10px; }
+.range input { flex: 1; accent-color: var(--accent); }
+.range output { min-width: 2ch; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.linkbtn {
+  background: none; border: 0; padding: 0; color: var(--accent); cursor: pointer;
+  font-size: 13px; text-decoration: underline; text-underline-offset: 2px;
+}
+
+/* ---------- päänäkymä ---------- */
+.summary { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+.summary strong { color: var(--ink); font-weight: 600; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line-strong); margin-bottom: 0; }
+.tab {
+  background: none; border: 0; padding: 9px 14px; cursor: pointer; font-weight: 500;
+  color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.tab .n { margin-left: 6px; font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); }
+.legend {
+  display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center;
+  padding: 10px 16px; font-size: 13px; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--line); border-bottom: 0;
+  border-radius: 10px 10px 0 0; margin-top: 12px;
+}
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+
+.jobs {
+  list-style: none; margin: 0; padding: 0; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 0 0 10px 10px;
+}
+.job {
+  display: grid; grid-template-columns: 2.25rem minmax(0, 1fr) auto; gap: 0 14px;
+  padding: 16px; border-top: 1px solid var(--line);
+}
+.job:first-child { border-top: 0; }
+.rank { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; padding-top: 2px; text-align: right; }
+.headline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.title { font-weight: 600; font-size: 16px; text-decoration: none; letter-spacing: -0.005em; }
+.title:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.chip {
+  font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px;
+  background: var(--accent-soft); color: #173A78;
+}
+.chip-done { background: #E2F3EF; color: #07564B; }
+.meta { display: flex; flex-wrap: wrap; gap: 2px 16px; color: var(--muted); font-size: 14px; margin-top: 2px; }
+.meta .src { color: #7B8597; }
+
+.fit { display: flex; align-items: center; gap: 12px; margin-top: 10px; max-width: 520px; }
+.track {
+  flex: 1; height: 8px; border-radius: 4px; background: #E9EDF2;
+  display: flex; overflow: hidden;
+}
+.seg { display: block; height: 100%; border-right: 1px solid #fff; }
+.seg:last-child { border-right: 0; }
+.seg-alue { background: var(--c-alue); }
+.seg-osaaminen { background: var(--c-osaaminen); }
+.seg-taso { background: var(--c-taso); }
+.seg-ala { background: var(--c-ala); }
+.score { min-width: 2.2ch; text-align: right; font-weight: 700; font-size: 20px; font-variant-numeric: tabular-nums; line-height: 1; }
+.score.high { color: var(--high); }
+.score.mid { color: var(--mid); }
+.score.low { color: var(--low); }
+
+details.why { margin-top: 8px; font-size: 14px; }
+details.why summary { cursor: pointer; color: var(--accent); font-size: 13px; width: fit-content; }
+details.why ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); }
+
+.tools { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; }
+.tool {
+  background: none; border: 0; padding: 0; font-size: 13px; color: var(--muted); cursor: pointer;
+}
+.tool:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.tool[aria-pressed="true"] { color: var(--accent); font-weight: 600; }
+.actions { display: flex; align-items: flex-start; }
+.act.open {
+  display: inline-block; padding: 7px 14px; border-radius: 6px; font-size: 14px; font-weight: 500;
+  background: var(--accent); border: 1px solid var(--accent); color: #fff; text-decoration: none; white-space: nowrap;
+}
+.act.open:hover { background: #1A438C; }
+.job.is-applied .title { color: var(--muted); }
+
+.empty { padding: 48px 24px; text-align: center; color: var(--muted); }
+.empty h2 { margin: 0 0 6px; color: var(--ink); font-size: 17px; }
+.empty p { margin: 0 auto 14px; max-width: 46ch; }
+
+[hidden] { display: none !important; }
+
+/* ---------- valikko ---------- */
+.nav { display: flex; gap: 4px; margin-left: 28px; }
+.nav button {
+  background: none; border: 0; padding: 8px 12px; border-radius: 6px; cursor: pointer;
+  font-weight: 500; color: var(--muted);
+}
+.nav button:hover { color: var(--ink); background: #F3F5F8; }
+.nav button[aria-current="page"] { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.brand-wrap { display: flex; align-items: center; }
+
+/* ---------- osaamisprofiili ---------- */
+.profile { max-width: 1160px; margin: 0 auto; padding: 16px 24px 56px; }
+.p-head { margin-bottom: 16px; }
+.p-head h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.01em; }
+.p-head p { margin: 0; color: var(--muted); max-width: 70ch; }
+#save-state { display: inline-block; margin-top: 8px; font-size: 13px; color: var(--muted); min-height: 1.4em; }
+#save-state.err { color: var(--err-ink); font-weight: 600; }
+.p-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.panel h3 { margin: 0 0 4px; font-size: 15px; }
+.hint { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+
+.add { display: grid; grid-template-columns: 1.3fr 1.6fr 1.3fr 1fr 84px auto; gap: 8px; align-items: end; }
+.add label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--muted); }
+.in {
+  width: 100%; padding: 7px 9px; border: 1px solid var(--line-strong); border-radius: 6px; background: #fff;
+}
+.in:hover { border-color: #AEB9C9; }
+#add-msg { grid-column: 1 / -1; font-size: 13px; color: var(--err-ink); min-height: 0; }
+#add-msg:empty { display: none; }
+
+.group { margin-top: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.group h3 {
+  margin: 0; padding: 10px 16px; font-size: 14px; background: #F8F9FB; border-bottom: 1px solid var(--line);
+  display: flex; justify-content: space-between;
+}
+.group h3 span { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+.srow {
+  display: grid; grid-template-columns: 1.3fr 1.6fr 1.1fr 84px auto; gap: 8px; align-items: center;
+  padding: 8px 16px; border-top: 1px solid var(--line);
+}
+.srow:first-of-type { border-top: 0; }
+.srow .in.name { font-weight: 600; }
+.srow .in.weight { text-align: center; }
+.rm { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 4px 6px; font-size: 13px; }
+.rm:hover { color: var(--err-ink); text-decoration: underline; }
+.col-head {
+  display: grid; grid-template-columns: 1.3fr 1.6fr 1.1fr 84px auto; gap: 8px; padding: 8px 16px;
+  font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line);
+}
+.col-head span:last-child { width: 52px; }
+
+.slist { list-style: none; margin: 0; padding: 0; }
+.slist li { padding: 10px 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; }
+.slist li:first-child { border-top: 0; padding-top: 0; }
+.slist .nm { font-weight: 600; font-size: 14px; }
+.slist .sub { grid-column: 1; color: var(--muted); font-size: 12.5px; }
+.slist .sub a { color: var(--accent); }
+.slist .btn { grid-column: 2; grid-row: 1 / span 2; align-self: center; padding: 4px 10px; font-size: 13px; }
+.panel .more { display: inline-block; margin-top: 10px; font-size: 13px; color: var(--accent); }
+
+/* ---------- hakemusseuranta ---------- */
+.nav-n { margin-left: 4px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.nav-n:empty { display: none; }
+.apps-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.col { background: #E8ECF2; border-radius: 10px; padding: 10px; min-height: 120px; border: 2px solid transparent; }
+.col.over { border-color: var(--accent); background: #DCE6F6; }
+.col h3 { margin: 2px 4px 6px; font-size: 14px; display: flex; justify-content: space-between; }
+.col h3 span { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; margin-top: 8px; cursor: grab;
+}
+.card.dragging { opacity: .45; }
+.card-title {
+  display: block; width: 100%; text-align: left; background: none; border: 0; padding: 0;
+  font-weight: 600; font-size: 14.5px; cursor: pointer; line-height: 1.35;
+}
+.card-title:hover { color: var(--accent); }
+.card-meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.card-line { font-size: 12.5px; margin-top: 6px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.card-line .soon { color: var(--warn-ink); font-weight: 600; }
+.card-line .late { color: var(--err-ink); font-weight: 600; }
+.card-score { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--mid); }
+.closed { margin-top: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.closed h3 { margin: 0; padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--line); }
+.closed h3 span { color: var(--muted); font-weight: 400; }
+.closed ul { list-style: none; margin: 0; padding: 0; }
+.closed li { display: flex; gap: 12px; align-items: baseline; padding: 10px 16px; border-top: 1px solid var(--line); }
+.closed li:first-child { border-top: 0; }
+.closed .card-title { width: auto; font-size: 14px; }
+.closed .tag { font-size: 12px; padding: 1px 8px; border-radius: 99px; background: #EEF0F4; color: var(--muted); }
+
+.dlg {
+  width: min(780px, calc(100vw - 24px)); max-height: calc(100vh - 32px); padding: 0;
+  border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); color: var(--ink);
+}
+.dlg::backdrop { background: rgba(23, 32, 51, .45); }
+.dlg[open] { display: flex; flex-direction: column; }
+.dlg-head { display: flex; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.dlg-title { font-size: 17px; font-weight: 700; border-color: transparent; padding-left: 6px; }
+.dlg-title:hover, .dlg-title:focus { border-color: var(--line-strong); }
+.dlg-body { overflow-y: auto; padding: 16px 18px 20px; }
+.fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.f { display: block; }
+.fl { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+textarea.in { resize: vertical; min-height: 96px; line-height: 1.45; font: inherit; }
+.dlg details { margin: 10px 0; }
+.dlg summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.dlg .posting { min-height: 220px; font-size: 13px; }
+.dlg .why-list { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 13.5px; }
+.dlg .hist { list-style: none; margin: 6px 0 0; padding: 0; color: var(--muted); font-size: 13px; }
+.dlg .hist li { padding: 2px 0; }
+.dlg-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 18px; gap: 12px; flex-wrap: wrap; }
+.btn.danger { color: var(--err-ink); border-color: #E8B9B5; }
+.btn.danger:hover { background: var(--err-bg); }
+.dlg-saved { font-size: 13px; color: var(--muted); }
+
+@media (max-width: 900px) {
+  .board { grid-template-columns: 1fr; }
+  .p-grid { grid-template-columns: 1fr; }
+  .profile { padding: 12px 16px 48px; }
+  .add { grid-template-columns: 1fr 1fr; }
+  .add .btn { grid-column: 1 / -1; }
+  .col-head { display: none; }
+  .srow { grid-template-columns: 1fr 1fr; }
+  .srow .in.name, .srow .in.aliases { grid-column: 1 / -1; }
+  .nav { margin-left: 12px; }
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; padding: 12px 16px 40px; }
+  .rail { position: static; padding: 0 16px; }
+  .rail > summary { display: block; cursor: pointer; font-weight: 600; padding: 12px 0; }
+  #banner { padding: 0 16px; }
+  .top { padding: 10px 16px; }
+  #updated { display: none; }
+}
+@media (max-width: 640px) {
+  .brand h1 { display: none; }
+  .nav { margin-left: 0; }
+  .nav button { padding: 8px 10px; }
+  .job { grid-template-columns: 1.5rem minmax(0, 1fr); gap: 0 10px; padding: 14px 12px; }
+  .actions { grid-column: 2; margin-top: 12px; }
+  .tab { padding: 9px 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner, .bar-run::after { animation: none; }
+}
+
+/* ---------- ilmoitussivu ---------- */
+.detail { max-width: 1160px; margin: 0 auto; padding: 16px 24px 56px; }
+.d-back { display: inline-block; margin-bottom: 12px; color: var(--accent); font-size: 14px; text-decoration: none; }
+.d-back:hover { text-decoration: underline; text-underline-offset: 3px; }
+.d-head h2 { margin: 0 0 6px; font-size: 26px; line-height: 1.25; letter-spacing: -0.015em; max-width: 30ch; }
+.d-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+.d-chips .chip { font-weight: 500; font-size: 13px; padding: 2px 10px; }
+.chip-warn { background: var(--warn-bg); color: var(--warn-ink); }
+.d-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 20px; }
+.d-actions .btn[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.btn.as-link { text-decoration: none; display: inline-block; }
+.d-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.d-desc h3 { margin: 0 0 12px; font-size: 16px; }
+.d-desc .d-sub { margin: 18px 0 6px; font-size: 15px; font-weight: 600; }
+.d-desc p { margin: 0 0 10px; max-width: 72ch; }
+.d-desc ul { margin: 0 0 12px; padding-left: 20px; max-width: 72ch; }
+.d-desc li { margin: 2px 0; }
+.d-note { margin: 0 0 12px; padding: 8px 10px; background: var(--warn-bg); color: var(--warn-ink); border-radius: 6px; font-size: 13px; }
+.d-score { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.d-score .fit { margin: 0; flex: 1; }
+.d-parts { list-style: none; margin: 8px 0 0; padding: 0; }
+.d-parts li { display: grid; grid-template-columns: 90px 1fr 52px; gap: 8px; align-items: center; font-size: 13px; padding: 3px 0; }
+.d-parts .pb { height: 6px; border-radius: 3px; background: #E9EDF2; overflow: hidden; }
+.d-parts .pb span { display: block; height: 100%; }
+.d-parts .pv { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.d-reasons { margin: 10px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+.tagset { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tag { font-size: 13px; padding: 2px 10px; border-radius: 99px; background: var(--accent-soft); color: #173A78; }
+.tag.miss { background: var(--warn-bg); color: var(--warn-ink); border: 0; cursor: pointer; font-weight: 500; }
+.tag.miss:hover { filter: brightness(.96); }
+.d-list { margin: 4px 0 8px; padding-left: 18px; font-size: 14px; }
+.d-list li { margin: 3px 0; }
+.d-sec { margin: 10px 0 2px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.d-empty { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.d-load { color: var(--muted); padding: 24px 0; }
+@media (max-width: 900px) { .d-grid { grid-template-columns: 1fr; } .detail { padding: 12px 16px 40px; } .d-head h2 { max-width: none; } }
+
+.nav-n.due { background: #C0392B; color: #fff; border-radius: 99px; padding: 0 6px; margin-left: 4px; }
+.chip.chip-gone { background: var(--err-bg); color: var(--err-ink); }
+.late { color: var(--err-ink); font-weight: 600; }
+.soon { color: var(--warn-ink); font-weight: 600; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; align-items: center; }
+.toolbar .hint { margin: 0; }
+.rem-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.rem-list li { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--line); }
+.rem-list li:first-child { border-top: 0; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 10px 0; }
+.stat { background: var(--bg); border-radius: 8px; padding: 10px 12px; }
+.stat b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12.5px; color: var(--muted); }
+.goalbar { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 6px 0 2px; }
+.goalbar > span { display: block; height: 100%; background: var(--high); }
+.weeks { display: flex; align-items: flex-end; gap: 6px; height: 56px; margin-top: 8px; }
+.weeks div { flex: 1; background: var(--accent-soft); border-radius: 3px 3px 0 0; min-height: 3px; position: relative; }
+.weeks div.cur { background: var(--accent); }
+.set-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.set-grid textarea.in { min-height: 140px; font-family: inherit; }
+.loc-row { display: grid; grid-template-columns: 1fr 70px 1.4fr auto; gap: 8px; margin-bottom: 8px; }
+.cmpbar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line-strong); padding: 10px 24px; display: flex; gap: 12px; align-items: center; z-index: 20; box-shadow: 0 -2px 8px rgba(0,0,0,.06); }
+.cmpbar[hidden] { display: none; }
+table.cmp { border-collapse: collapse; width: 100%; background: var(--surface); }
+table.cmp th, table.cmp td { border: 1px solid var(--line); padding: 8px 10px; vertical-align: top; text-align: left; font-size: 14px; }
+table.cmp th[scope=row] { background: var(--bg); width: 140px; color: var(--muted); font-weight: 600; font-size: 12.5px; }
+table.cmp td ul { margin: 0; padding-left: 16px; }
+.cmp-wrap { overflow-x: auto; }
+.co-card { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; }
+.co-card h3 { margin: 0; }
+.co-card .tagset { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+      <rect x="2" y="15" width="22" height="3.5" rx="1.75" fill="#E9EDF2"/>
+      <rect x="2" y="15" width="7" height="3.5" rx="1.75" fill="#2F6FB5"/>
+      <rect x="10" y="15" width="8" height="3.5" fill="#14907F"/>
+      <rect x="2" y="7" width="22" height="3.5" rx="1.75" fill="#E9EDF2"/>
+      <rect x="2" y="7" width="14" height="3.5" rx="1.75" fill="#1F4FA3"/>
+    </svg>
+    <h1>Työnhaku</h1>
+    <nav class="nav" aria-label="Näkymät">
+      <button type="button" id="nav-jobs" data-view="jobs">Työpaikat</button>
+      <button type="button" id="nav-apps" data-view="apps">Hakemukset <span class="nav-n" id="nav-apps-n"></span><span class="nav-n due" id="nav-apps-due" title="Erääntyviä muistutuksia"></span></button>
+      <button type="button" id="nav-companies" data-view="companies">Yritykset <span class="nav-n due" id="nav-co-due" title="Rekrysivu tarkistamatta yli 7 päivää"></span></button>
+      <button type="button" id="nav-profile" data-view="profile">Osaamisprofiili</button>
+      <button type="button" id="nav-settings" data-view="settings">Asetukset</button>
+    </nav>
+  </div>
+  <div class="top-right">
+    <span id="updated"></span>
+    <button id="refresh" class="btn primary" type="button"><span class="spinner" aria-hidden="true"></span><span id="refresh-label">Päivitä haku</span></button>
+  </div>
+</header>
+
+<div id="banner" role="status" aria-live="polite"></div>
+
+<div class="layout" id="view-jobs">
+  <details class="rail" id="filters">
+    <summary>Suodattimet</summary>
+    <div class="field">
+      <label for="q">Hae otsikosta ja yrityksestä</label>
+      <input id="q" type="search" placeholder="esim. React, Tieto">
+    </div>
+    <div class="field">
+      <span class="lbl" id="lbl-area">Alue</span>
+      <div class="checks" id="areas" role="group" aria-labelledby="lbl-area"></div>
+    </div>
+    <div class="field">
+      <span class="lbl" id="lbl-src">Lähde</span>
+      <div class="checks" id="sources" role="group" aria-labelledby="lbl-src"></div>
+    </div>
+    <div class="field">
+      <label for="min">Vähimmäispisteet</label>
+      <div class="range"><input id="min" type="range" min="0" max="100" step="5" value="0"><output id="min-out" for="min">0</output></div>
+    </div>
+    <div class="field">
+      <label class="check"><input id="only-new" type="checkbox"> Vain uudet (3 päivää)</label>
+      <label class="check"><input id="only-watch" type="checkbox"> Vain seuratut yritykset <span class="n" id="watch-n"></span></label>
+      <label class="check"><input id="only-urgent" type="checkbox"> Hakuaika päättyy 7 pv sisällä <span class="n" id="urgent-n"></span></label>
+    </div>
+    <div class="field">
+      <label for="sort">Järjestys</label>
+      <select id="sort">
+        <option value="score">Parhaat pisteet ensin</option>
+        <option value="new">Uusimmat ensin</option>
+      </select>
+    </div>
+    <div class="field"><button id="clear" class="linkbtn" type="button">Tyhjennä suodattimet</button></div>
+    <div class="field"><a class="linkbtn" href="/api/export/ilmoitukset.csv" download>Vie ilmoitukset CSV-tiedostoon</a></div>
+  </details>
+
+  <main>
+    <div class="toolbar"><button class="btn" type="button" id="manual-add">Lisää ilmoitus käsin</button>
+      <span class="hint">Esimerkiksi LinkedInistä, Joblysta tai yrityksen omilta sivuilta löytynyt paikka.</span></div>
+    <section class="panel" id="fresh" hidden></section>
+    <p class="summary" id="summary"></p>
+    <div class="tabs" role="tablist" aria-label="Näkymä" id="tabs"></div>
+    <div class="legend" id="legend">
+      <span>Pisteiden jakauma</span>
+      <span><i style="background:var(--c-alue)"></i>Alue</span>
+      <span><i style="background:var(--c-osaaminen)"></i>Osaaminen</span>
+      <span><i style="background:var(--c-taso)"></i>Taso</span>
+      <span><i style="background:var(--c-ala)"></i>Ala</span>
+    </div>
+    <ol class="jobs" id="list"></ol>
+  </main>
+</div>
+
+<section class="profile" id="view-apps" hidden>
+  <div class="p-head apps-head">
+    <div>
+      <h2>Hakemukset</h2>
+      <p id="apps-summary">Seuraa, missä vaiheessa kukin hakemus on. Ilmoituksen teksti tallentuu mukaan, joten se säilyy, vaikka ilmoitus poistuisi netistä.</p>
+    </div>
+    <button class="btn primary" type="button" id="app-new">Lisää hakemus</button>
+  </div>
+  <div class="toolbar">
+    <a class="btn as-link" href="/api/export/hakemukset.csv" download>Vie CSV</a>
+    <a class="btn as-link" href="/api/export/kalenteri.ics" download>Vie kalenteriin (.ics)</a>
+    <button class="btn" type="button" id="backup-now">Varmuuskopioi nyt</button>
+    <span class="hint" id="backup-msg" role="status"></span>
+  </div>
+  <section class="panel" id="reminders" hidden></section>
+  <section class="panel" id="stats" hidden></section>
+  <div id="board" class="board"></div>
+  <section class="closed" id="closed-box" hidden>
+    <h3>Päättyneet <span id="closed-n"></span></h3>
+    <ul id="closed-list"></ul>
+  </section>
+</section>
+
+<dialog id="manual-dialog" class="dlg" aria-labelledby="man-title">
+  <div class="dlg-head"><strong id="man-title" style="flex:1;font-size:17px">Lisää ilmoitus käsin</strong>
+    <button class="btn" type="button" id="man-close">Sulje</button></div>
+  <form class="dlg-body" id="man-form"></form>
+</dialog>
+
+<dialog id="app-dialog" class="dlg" aria-labelledby="dlg-title">
+  <div class="dlg-head">
+    <input class="in dlg-title" id="dlg-title" aria-label="Työpaikan nimi" maxlength="200">
+    <button class="btn" type="button" id="dlg-close">Sulje</button>
+  </div>
+  <div class="dlg-body" id="dlg-body"></div>
+</dialog>
+
+<section class="detail" id="view-detail" hidden>
+  <div id="detail-body"></div>
+</section>
+
+<section class="profile" id="view-companies" hidden></section>
+<section class="profile" id="view-settings" hidden></section>
+<section class="profile" id="view-compare" hidden></section>
+<div class="cmpbar" id="cmpbar" hidden></div>
+
+<section class="profile" id="view-profile" hidden>
+  <div class="p-head">
+    <h2>Osaamisprofiili</h2>
+    <p>Tässä määrität, mitä taitoja ilmoituksista etsitään. Painoarvo kertoo, kuinka paljon taito nostaa paikan pisteitä. Taso on muistiinpano sinulle eikä vaikuta pisteisiin. Muutokset tallentuvat itsestään ja pisteet päivittyvät heti.</p>
+    <span id="save-state" role="status" aria-live="polite"></span>
+  </div>
+  <div class="p-grid">
+    <div>
+      <form class="panel add" id="add-form" autocomplete="off">
+        <div><label for="a-name">Taito</label><input class="in" id="a-name" required maxlength="60" placeholder="esim. Docker"></div>
+        <div><label for="a-alias">Vaihtoehtoiset kirjoitusasut</label><input class="in" id="a-alias" placeholder="pilkulla erotettuna, esim. k8s, kubernetes"></div>
+        <div><label for="a-cat">Ryhmä</label><select class="in" id="a-cat"></select></div>
+        <div><label for="a-level">Oma taso</label><select class="in" id="a-level"></select></div>
+        <div><label for="a-weight">Painoarvo</label><input class="in" id="a-weight" type="number" min="0" max="5" step="0.5" value="1"></div>
+        <button class="btn primary" type="submit">Lisää taito</button>
+        <div id="add-msg" role="alert"></div>
+      </form>
+      <div id="skill-groups"></div>
+    </div>
+    <aside>
+      <section class="panel">
+        <h3>Usein ilmoituksissa, ei vielä profiilissa</h3>
+        <p class="hint" id="gaps-hint"></p>
+        <ul class="slist" id="gaps"></ul>
+      </section>
+      <section class="panel">
+        <h3>Ehdotuksia OPS:stäsi</h3>
+        <p class="hint" id="ops-hint"></p>
+        <ul class="slist" id="ops-sugg"></ul>
+        <a class="more" id="ops-link" target="_blank" rel="noopener noreferrer">Avaa OPS</a>
+      </section>
+    </aside>
+  </div>
+</section>
+
+<script>
+"use strict";
+const AREAS = ["Vaasa", "Tampere", "Helsinki", "Espoo", "Vantaa"];
+const D = { url: null, data: null };
+const OTHER = "Muu alue";
+const SOURCES = { duunitori: "Duunitori", jobly: "Jobly", manual: "Käsin lisätty" };
+const PARTS = [["alue", "Alue"], ["osaaminen", "Osaaminen"], ["taso", "Taso"], ["ala", "Ala"]];
+const TABS = [["all", "Kaikki"], ["saved", "Tallennetut"], ["hidden", "Piilotetut"]];
+const NEW_DAYS = 3;
+
+const S = {
+  rows: [], state: {}, updated: null, demo: false,
+  running: false, message: "", error: null, offline: false,
+  f: { q: "", areas: [], sources: [], min: 0, onlyNew: false, onlyUrgent: false, onlyWatch: false, sort: "score", tab: "all" },
+  gone: {}, cmp: [],
+};
+
+const $ = (s, r = document) => r.querySelector(s);
+
+function h(tag, props = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k.startsWith("aria-")) { e.setAttribute(k, String(v)); continue; }
+    if (v == null || v === false) continue;
+    if (k === "class") e.className = v;
+    else if (k === "text") e.textContent = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) {
+    if (c == null || c === false) continue;
+    e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  return e;
+}
+
+const safeUrl = (u) => (/^https?:\/\//i.test(u) ? u : "#");
+const areaOf = (r) => r.area || OTHER;
+const srcName = (s) => SOURCES[s] || s || "";
+const fmtDate = (iso) => new Intl.DateTimeFormat("fi-FI", { dateStyle: "short", timeStyle: "short" }).format(new Date(iso));
+
+/* ---------- tallennetut suodattimet ---------- */
+function loadFilters() {
+  try {
+    const f = JSON.parse(localStorage.getItem("jh-filters") || "null");
+    if (f) Object.assign(S.f, f);
+  } catch { /* ei tallennettua */ }
+  if (!TABS.some(([k]) => k === S.f.tab)) S.f.tab = "all";
+}
+function saveFilters() {
+  try { localStorage.setItem("jh-filters", JSON.stringify(S.f)); } catch { /* ei haittaa */ }
+}
+
+/* ---------- API ---------- */
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (!r.ok) {
+    let msg = path + " " + r.status;
+    try { const b = await r.json(); if (b && b.error) msg = b.error; } catch { /* ei JSON-vastausta */ }
+    throw new Error(msg);
+  }
+  return r.json();
+}
+const post = (path, body) => api(path, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", "X-Requested-With": "jobhunter" },
+  body: JSON.stringify(body || {}),
+});
+
+async function loadJobs() {
+  const d = await api("/api/jobs");
+  S.rows = d.rows || [];
+  S.state = d.state || {};
+  S.updated = d.updated;
+  S.gone = d.gone || {};
+  window.setTimeout(maybeNotify, 0);
+  S.demo = !!d.demo;
+  renderAll();
+  if (D.url && !$("#view-detail").hidden) loadDetail(D.url, true);  // pisteet voivat olla muuttuneet
+}
+
+async function pollStatus() {
+  try {
+    const s = await api("/api/status");
+    const was = S.running;
+    S.offline = false;
+    S.running = s.running; S.error = s.error; S.message = s.message; S.warning = s.warning;
+    renderBanner(); renderTop();
+    if (was && !s.running) await loadJobs();
+  } catch {
+    S.offline = true;
+    renderBanner();
+  }
+}
+
+async function startRefresh() {
+  try {
+    S.running = true; S.error = null; S.message = "Aloitetaan";
+    renderBanner(); renderTop();
+    await post("/api/refresh");
+  } catch {
+    S.running = false; S.offline = true; renderBanner(); renderTop();
+  }
+}
+
+async function setState(url, key, value) {
+  const prev = { ...(S.state[url] || {}) };
+  const cur = { ...prev, [key]: value };
+  if (key === "hidden" && value) cur.saved = false;
+  if (Object.values(cur).some(Boolean)) S.state[url] = cur; else delete S.state[url];
+  renderAll();
+  try {
+    await post("/api/state", { url, ...cur });
+  } catch {
+    if (Object.values(prev).some(Boolean)) S.state[url] = prev; else delete S.state[url];
+    S.offline = true; renderAll(); renderBanner();
+  }
+}
+
+/* ---------- apulaskelma ---------- */
+function okRows() { return S.rows.filter((r) => r.status === "ok"); }
+
+function isNew(r, minSeen) {
+  if (!r.first_seen || r.first_seen <= minSeen) return false;
+  const days = (Date.now() - new Date(r.first_seen + "T00:00:00").getTime()) / 86400000;
+  return days <= NEW_DAYS;
+}
+
+function urgent(r) {
+  const dl = deadlineOf(r);
+  if (!dl) return false;
+  const left = daysUntil(dl);
+  return left >= 0 && left <= 7;
+}
+
+function visible() {
+  const rows = okRows();
+  const minSeen = rows.reduce((m, r) => (r.first_seen && r.first_seen < m ? r.first_seen : m), "9999");
+  const f = S.f, q = f.q.trim().toLowerCase();
+  const out = rows.filter((r) => {
+    const st = S.state[r.job.url] || {};
+    if (f.tab === "all" && st.hidden) return false;
+    if (f.tab === "saved" && !st.saved) return false;
+    if (f.tab === "hidden" && !st.hidden) return false;
+    if (f.areas.length && !f.areas.includes(areaOf(r))) return false;
+    if (f.sources.length && !f.sources.includes(r.job.source)) return false;
+    if (r.score < f.min) return false;
+    if (f.onlyNew && !isNew(r, minSeen)) return false;
+    if (f.onlyUrgent && !urgent(r)) return false;
+    if (f.onlyWatch && !r.watch) return false;
+    if (q && !(`${r.job.title} ${r.job.company} ${r.job.location}`).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  out.sort((a, b) => f.sort === "new"
+    ? (b.first_seen || "").localeCompare(a.first_seen || "") || b.score - a.score
+    : b.score - a.score);
+  return { list: out, minSeen };
+}
+
+/* ---------- piirto ---------- */
+function renderTop() {
+  $("#updated").textContent = S.updated ? "Päivitetty " + fmtDate(S.updated) : "Ei vielä päivitetty";
+  const btn = $("#refresh");
+  btn.disabled = S.running;
+  btn.classList.toggle("is-running", S.running);
+  $("#refresh-label").textContent = S.running ? "Päivitetään" : "Päivitä haku";
+}
+
+function renderBanner() {
+  const b = $("#banner");
+  b.replaceChildren();
+  if (S.offline) {
+    b.append(h("div", { class: "note note-err", text: "Yhteys palvelimeen katkesi. Käynnistä webapp.py uudelleen ja lataa sivu." }));
+  }
+  if (S.running) {
+    b.append(h("div", { class: "note note-info" }, h("div", { text: "Haku käynnissä: " + (S.message || "") }), h("div", { class: "bar-run" })));
+  } else if (S.error) {
+    b.append(h("div", { class: "note note-err", text: "Päivitys epäonnistui. " + S.error }));
+  }
+  if (S.warning && !S.running) {
+    b.append(h("div", { class: "note note-warn", text: S.warning }));
+  }
+  if (S.flash) {
+    b.append(h("div", { class: "note note-warn", text: S.flash }));
+  }
+  if (S.demo) {
+    b.append(h("div", { class: "note note-warn", text: "Demotila: näet esimerkkiaineistoa, ei oikeita ilmoituksia. Käynnistä ilman --demo-valitsinta hakeaksesi oikeat." }));
+  }
+}
+
+function renderFilters() {
+  const rows = okRows();
+  const count = (fn) => rows.filter(fn).length;
+
+  const areas = h("div", { class: "checks" });
+  for (const a of [...AREAS, OTHER]) {
+    const id = "a-" + a;
+    areas.append(h("label", { class: "check", for: id },
+      h("input", { id, type: "checkbox", checked: S.f.areas.includes(a), onchange: (e) => toggle("areas", a, e.target.checked) }),
+      a, h("span", { class: "n", text: String(count((r) => areaOf(r) === a)) })));
+  }
+  $("#areas").replaceWith(Object.assign(areas, { id: "areas" }));
+  areas.setAttribute("role", "group"); areas.setAttribute("aria-labelledby", "lbl-area");
+
+  const srcs = [...new Set(rows.map((r) => r.job.source).filter(Boolean))];
+  const box = h("div", { class: "checks" });
+  for (const s of srcs) {
+    const id = "s-" + s;
+    box.append(h("label", { class: "check", for: id },
+      h("input", { id, type: "checkbox", checked: S.f.sources.includes(s), onchange: (e) => toggle("sources", s, e.target.checked) }),
+      srcName(s), h("span", { class: "n", text: String(count((r) => r.job.source === s)) })));
+  }
+  if (!srcs.length) box.append(h("span", { class: "n", text: "Ei lähteitä vielä" }));
+  $("#sources").replaceWith(Object.assign(box, { id: "sources" }));
+  box.setAttribute("role", "group"); box.setAttribute("aria-labelledby", "lbl-src");
+
+  $("#q").value = S.f.q;
+  $("#min").value = S.f.min; $("#min-out").textContent = S.f.min;
+  $("#only-new").checked = S.f.onlyNew;
+  $("#only-urgent").checked = !!S.f.onlyUrgent;
+  $("#only-watch").checked = !!S.f.onlyWatch;
+  const wn = okRows().filter((r) => r.watch).length;
+  $("#watch-n").textContent = wn ? String(wn) : "";
+  const un = okRows().filter(urgent).length;
+  $("#urgent-n").textContent = un ? String(un) : "";
+  $("#sort").value = S.f.sort;
+}
+
+function toggle(key, val, on) {
+  const set = new Set(S.f[key]);
+  on ? set.add(val) : set.delete(val);
+  S.f[key] = [...set];
+  saveFilters(); renderMain();
+}
+
+function renderTabs() {
+  const rows = okRows();
+  const n = (fn) => rows.filter((r) => fn(S.state[r.job.url] || {})).length;
+  const counts = { all: n((s) => !s.hidden), saved: n((s) => s.saved), hidden: n((s) => s.hidden) };
+  const t = $("#tabs");
+  t.replaceChildren(...TABS.map(([k, label]) => h("button", {
+    class: "tab", role: "tab", type: "button", "aria-selected": S.f.tab === k,
+    onclick: () => { S.f.tab = k; saveFilters(); renderMain(); },
+  }, label, h("span", { class: "n", text: String(counts[k]) }))));
+}
+
+function renderSummary() {
+  const rows = okRows();
+  const el = $("#summary");
+  if (!S.updated) { el.textContent = ""; return; }
+  const strong = rows.filter((r) => r.score >= 75).length;
+  const minSeen = rows.reduce((m, r) => (r.first_seen && r.first_seen < m ? r.first_seen : m), "9999");
+  const fresh = rows.filter((r) => isNew(r, minSeen)).length;
+  const dropped = S.rows.length - rows.length;
+  el.replaceChildren(
+    h("strong", { text: String(rows.length) }), " ilmoitusta pisteytetty, ",
+    h("strong", { text: String(strong) }), " vahvaa osumaa (75 pistettä tai enemmän) ja ",
+    h("strong", { text: String(fresh) }), " uutta. ",
+    dropped ? `${dropped} jätettiin pois, koska ne eivät sovi profiiliin tai hakuaika on päättynyt.` : "");
+}
+
+function fitBar(r) {
+  const tier = r.score >= 75 ? "high" : r.score >= 55 ? "mid" : "low";
+  const desc = PARTS.map(([k, l]) => `${l.toLowerCase()} ${Math.round(r.parts[k])}`).join(", ");
+  return h("div", { class: "fit" },
+    h("div", { class: "track", role: "img", "aria-label": `Pisteet ${Math.round(r.score)} / 100: ${desc}` },
+      PARTS.map(([k, l]) => h("span", { class: "seg seg-" + k, style: `width:${Math.max(0, r.parts[k])}%`, title: `${l}: ${Math.round(r.parts[k])}` }))),
+    h("div", { class: "score " + tier, text: String(Math.round(r.score)), title: "Pisteet / 100" }));
+}
+
+function urgentChip(r) {
+  if (!urgent(r)) return null;
+  const left = daysUntil(deadlineOf(r));
+  return h("span", { class: "chip chip-warn", text: left === 0 ? "Päättyy tänään" : `Päättyy ${left} pv` });
+}
+
+function jobRow(r, i, minSeen) {
+  const j = r.job, st = S.state[j.url] || {};
+  const app = appByUrl().get(j.url);
+  const actions = h("div", { class: "actions" },
+    j.url.startsWith("manual://") ? null : h("a", { class: "act open", href: safeUrl(j.url), target: "_blank", rel: "noopener noreferrer", text: "Avaa ilmoitus" }));
+  const tools = h("div", { class: "tools" },
+    h("button", { class: "tool", type: "button", "aria-pressed": !!st.saved, text: st.saved ? "Tallennettu" : "Tallenna", onclick: () => setState(j.url, "saved", !st.saved) }),
+    app
+      ? h("button", { class: "tool", type: "button", "aria-pressed": true, text: "Seurannassa: " + STATUS_LABEL[app.status], onclick: () => { showView("apps"); openApp(app.id); } })
+      : h("button", { class: "tool", type: "button", text: "Lisää seurantaan", onclick: () => addToTracker(j.url) }),
+    h("button", { class: "tool", type: "button", "aria-pressed": S.cmp.includes(j.url), text: S.cmp.includes(j.url) ? "Vertailussa" : "Vertaa", onclick: () => toggleCmp(j.url) }),
+    h("button", { class: "tool", type: "button", text: st.hidden ? "Palauta" : "Piilota", onclick: () => setState(j.url, "hidden", !st.hidden) }));
+  const why = r.reasons && r.reasons.length
+    ? h("details", { class: "why" }, h("summary", { text: "Miksi nämä pisteet" }), h("ul", {}, r.reasons.map((x) => h("li", { text: x }))))
+    : null;
+  return h("li", { class: "job" + (app && ["applied", "interview", "offer"].includes(app.status) ? " is-applied" : "") },
+    h("div", { class: "rank", "aria-hidden": true, text: String(i + 1) }),
+    h("div", {},
+      h("div", { class: "headline" },
+        h("a", { class: "title", href: "#ilmoitus/" + encodeURIComponent(j.url), title: "Avaa ilmoituksen oma sivu", onclick: () => { S.scroll = window.scrollY; }, text: j.title }),
+        isNew(r, minSeen) ? h("span", { class: "chip", text: "Uusi" }) : null,
+        S.gone[j.url] ? h("span", { class: "chip chip-gone", title: "Havaittu " + fmtDay(S.gone[j.url]), text: "Ei enää haettavissa" }) : null,
+        r.watch ? h("span", { class: "chip chip-done", title: "Yritys on Yritykset-listallasi", text: "Seurattu yritys" }) : null,
+        urgentChip(r),
+        app ? h("span", { class: "chip chip-done", text: STATUS_LABEL[app.status] }) : null),
+      h("div", { class: "meta" },
+        j.company ? h("span", { text: j.company }) : null,
+        h("span", { text: j.location || r.area || "Alue ei tiedossa" }),
+        j.source ? h("span", { class: "src", text: srcName(j.source) }) : null),
+      fitBar(r), tools, why),
+    actions);
+}
+
+function renderList() {
+  const ol = $("#list");
+  ol.replaceChildren();
+  const { list, minSeen } = visible();
+  if (!S.updated) {
+    ol.append(h("li", { class: "empty" },
+      h("h2", { text: "Ei vielä tuloksia" }),
+      h("p", { text: "Paina Päivitä haku. Ohjelma hakee ilmoitukset, pisteyttää ne profiilisi mukaan ja näyttää parhaat ensin." })));
+    return;
+  }
+  if (!list.length) {
+    ol.append(h("li", { class: "empty" },
+      h("h2", { text: "Ei osumia näillä suodattimilla" }),
+      h("p", { text: "Löysimme ilmoituksia, mutta suodattimet rajaavat ne kaikki pois." }),
+      h("button", { class: "btn", type: "button", text: "Tyhjennä suodattimet", onclick: clearFilters })));
+    return;
+  }
+  list.forEach((r, i) => ol.append(jobRow(r, i, minSeen)));
+}
+
+const STRONG = 75;
+function renderFresh() {
+  const box = $("#fresh");
+  const rows = okRows();
+  const minSeen = rows.reduce((m, r) => (r.first_seen && r.first_seen < m ? r.first_seen : m), "9999");
+  const fresh = rows.filter((r) => r.score >= STRONG && isNew(r, minSeen) && !(S.state[r.job.url] || {}).hidden)
+    .sort((a, b) => b.score - a.score);
+  box.hidden = !fresh.length;
+  if (!fresh.length) return;
+  const canAsk = "Notification" in window && Notification.permission === "default";
+  box.replaceChildren(h("h3", { text: `${fresh.length} uutta vahvaa osumaa (${STRONG}+ pistettä, viimeiset ${NEW_DAYS} päivää)` }),
+    h("ul", { class: "rem-list" }, fresh.slice(0, 5).map((r) => h("li", {},
+      h("span", { class: "soon", text: String(Math.round(r.score)) }),
+      h("a", { href: "#ilmoitus/" + encodeURIComponent(r.job.url), text: r.job.title }),
+      h("span", { class: "card-meta", text: [r.job.company, areaOf(r)].filter(Boolean).join(", ") })))),
+    canAsk ? h("button", { class: "linkbtn", type: "button", text: "Ota selainilmoitukset käyttöön uusista vahvoista osumista",
+      onclick: async () => { try { await Notification.requestPermission(); } catch { /* ei tukea */ } renderFresh(); } }) : null);
+}
+
+const notified = new Set();
+let notifyReady = false;
+function maybeNotify() {
+  const strong = okRows().filter((r) => r.score >= STRONG);
+  if (!notifyReady) { strong.forEach((r) => notified.add(r.job.url)); notifyReady = true; return; }  // ensimmäinen lataus ei ilmoita
+  const added = strong.filter((r) => !notified.has(r.job.url));
+  added.forEach((r) => notified.add(r.job.url));
+  if (!added.length || !("Notification" in window) || Notification.permission !== "granted") return;
+  try {
+    new Notification(`${added.length} uutta vahvaa osumaa`, { body: added.slice(0, 3).map((r) => `${Math.round(r.score)} p ${r.job.title}`).join("\n") });
+  } catch { /* ilmoitus ei onnistunut */ }
+}
+
+function renderMain() { renderTabs(); renderSummary(); renderFresh(); renderList(); renderCmpBar(); }
+function renderAll() {
+  renderTop(); renderBanner(); renderFilters(); renderMain();
+  if (D.data && !$("#view-detail").hidden) renderDetail();
+}
+
+function clearFilters() {
+  Object.assign(S.f, { q: "", areas: [], sources: [], min: 0, onlyNew: false, onlyUrgent: false, onlyWatch: false, sort: "score" });
+  saveFilters(); renderFilters(); renderMain();
+}
+
+/* ---------- hakemusseuranta ---------- */
+const STATUS_LABEL = { interested: "Kiinnostava", drafting: "Työn alla", applied: "Haettu", interview: "Haastattelu", offer: "Tarjous", rejected: "Hylätty", no_response: "Ei vastausta", withdrawn: "Peruttu" };
+const BOARD = ["interested", "drafting", "applied", "interview", "offer"];
+const CLOSED = ["rejected", "withdrawn"];
+const A = { apps: [], pending: {}, timer: null, openId: null, appliedEl: null, map: null };
+
+function appByUrl() {
+  if (!A.map) A.map = new Map(A.apps.filter((a) => a.url).map((a) => [a.url, a]));
+  return A.map;
+}
+const parseDay = (iso) => new Date(iso + "T00:00:00");
+const fmtDay = (iso) => new Intl.DateTimeFormat("fi-FI", { day: "numeric", month: "numeric", year: "numeric" }).format(parseDay(iso));
+function daysUntil(iso) {
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((parseDay(iso) - t) / 86400000);
+}
+function flash(msg) {
+  S.flash = msg; renderBanner();
+  setTimeout(() => { S.flash = null; renderBanner(); }, 6000);
+}
+
+async function loadApps() {
+  const d = await api("/api/apps");
+  A.apps = d.apps || [];
+  A.map = null;
+  renderApps();
+  renderMain();
+  if (D.data && !$("#view-detail").hidden) renderDetail();
+}
+
+async function addToTracker(url) {
+  try {
+    await post("/api/apps", { action: "create", job_url: url });
+    await loadApps();
+  } catch (e) { flash(e.message); }
+}
+
+async function setAppStatus(id, status) {
+  const a = A.apps.find((x) => x.id === id);
+  if (!a || a.status === status) return;
+  try {
+    await post("/api/apps", { action: "update", id, fields: { status } });
+    await loadApps();
+  } catch (e) { flash(e.message); }
+}
+
+function appCard(a) {
+  const lines = [];
+  if (a.applied_date) lines.push(h("span", { text: "Haettu " + fmtDay(a.applied_date) }));
+  if (a.deadline && (a.status === "interested" || a.status === "drafting")) {
+    const d = daysUntil(a.deadline);
+    lines.push(h("span", { class: d < 0 ? "late" : d <= 3 ? "soon" : "", text: (d < 0 ? "Hakuaika päättyi " : "Hakuaika ") + fmtDay(a.deadline) }));
+  }
+  if (a.next_step || a.next_date) {
+    const d = a.next_date ? daysUntil(a.next_date) : null;
+    lines.push(h("span", { class: d != null && d < 0 ? "late" : d != null && d <= 1 ? "soon" : "",
+      text: "Seuraavaksi: " + (a.next_step || "") + (a.next_date ? " " + fmtDay(a.next_date) : "") }));
+  }
+  if (a.url && S.gone[a.url]) lines.push(h("span", { class: "late", text: "Ilmoitus ei enää haettavissa" }));
+  if (a.score != null) lines.push(h("span", { class: "card-score", title: "Sopivuuspisteet", text: a.score + " p" }));
+  const el = h("article", { class: "card", draggable: "true" },
+    h("button", { class: "card-title", type: "button", text: a.title, onclick: () => openApp(a.id) }),
+    h("div", { class: "card-meta", text: [a.company, a.location].filter(Boolean).join(", ") || "Yritys ei tiedossa" }),
+    lines.length ? h("div", { class: "card-line" }, lines) : null);
+  el.addEventListener("dragstart", (e) => {
+    e.dataTransfer.setData("text/plain", a.id);
+    e.dataTransfer.effectAllowed = "move";
+    el.classList.add("dragging");
+  });
+  el.addEventListener("dragend", () => el.classList.remove("dragging"));
+  return el;
+}
+
+function renderApps() {
+  const board = $("#board");
+  board.replaceChildren();
+  const active = A.apps.filter((a) => BOARD.includes(a.status));
+  const closed = A.apps.filter((a) => CLOSED.includes(a.status));
+  $("#nav-apps-n").textContent = active.length ? String(active.length) : "";
+  const dueN = reminders().filter((x) => x.d <= 1 && !(x.kind === "deadline" && x.d < 0)).length;
+  $("#nav-apps-due").textContent = dueN ? String(dueN) : "";
+  renderReminders();
+  const count = (s) => A.apps.filter((a) => a.status === s).length;
+  $("#apps-summary").textContent = A.apps.length
+    ? `${active.length} aktiivista hakemusta, joista ${count("applied")} haettu ja ${count("interview")} haastattelussa. Raahaa kortti toiseen sarakkeeseen vaihtaaksesi tilaa.`
+    : "Seuraa, missä vaiheessa kukin hakemus on. Ilmoituksen teksti tallentuu mukaan, joten se säilyy, vaikka ilmoitus poistuisi netistä.";
+  if (!A.apps.length) {
+    board.append(h("div", { class: "panel empty", style: "grid-column: 1 / -1" },
+      h("h2", { text: "Ei vielä hakemuksia" }),
+      h("p", { text: "Lisää paikka seurantaan työpaikkalistan Lisää seurantaan -napilla. Jos löysit ilmoituksen muualta, paina Lisää hakemus." })));
+    $("#closed-box").hidden = true;
+    return;
+  }
+  const recent = (x, y) => (y.updated || "").localeCompare(x.updated || "");
+  for (const key of BOARD) {
+    const items = A.apps.filter((a) => a.status === key).sort(recent);
+    const col = h("section", { class: "col", "aria-label": STATUS_LABEL[key] },
+      h("h3", {}, STATUS_LABEL[key], h("span", { text: String(items.length) })),
+      h("div", {}, items.map(appCard)));
+    col.addEventListener("dragover", (e) => { e.preventDefault(); col.classList.add("over"); });
+    col.addEventListener("dragleave", (e) => { if (!col.contains(e.relatedTarget)) col.classList.remove("over"); });
+    col.addEventListener("drop", (e) => {
+      e.preventDefault(); col.classList.remove("over");
+      const id = e.dataTransfer.getData("text/plain");
+      if (id) setAppStatus(id, key);
+    });
+    board.append(col);
+  }
+  const box = $("#closed-box"), list = $("#closed-list");
+  list.replaceChildren();
+  box.hidden = !closed.length;
+  $("#closed-n").textContent = closed.length ? String(closed.length) : "";
+  for (const a of closed.sort(recent)) {
+    list.append(h("li", {},
+      h("button", { class: "card-title", type: "button", text: a.title, onclick: () => openApp(a.id) }),
+      h("span", { class: "tag", text: STATUS_LABEL[a.status] }),
+      h("span", { class: "card-meta", text: [a.company, a.location].filter(Boolean).join(", ") })));
+  }
+}
+
+function reminders() {
+  const out = [];
+  for (const a of A.apps) {
+    if (CLOSED.includes(a.status)) continue;
+    if (a.next_date) {
+      const d = daysUntil(a.next_date);
+      if (d <= 7) out.push({ a, d, kind: "next", text: a.next_step || "Seuraava askel" });
+    }
+    if ((a.status === "interested" || a.status === "drafting") && a.deadline) {
+      const d = daysUntil(a.deadline);
+      if (d <= 7) out.push({ a, d, kind: "deadline", text: d < 0 ? "Hakuaika päättyi" : "Hakuaika päättyy" });
+    }
+  }
+  return out.sort((x, y) => x.d - y.d);
+}
+
+function dayWord(d) { return d < 0 ? `${-d} pv myöhässä` : d === 0 ? "tänään" : d === 1 ? "huomenna" : `${d} pv päästä`; }
+
+function renderReminders() {
+  const box = $("#reminders"), rem = reminders();
+  box.hidden = !rem.length;
+  if (!rem.length) return;
+  box.replaceChildren(h("h3", { text: "Muistutukset (7 pv sisällä ja myöhässä olevat)" }),
+    h("ul", { class: "rem-list" }, rem.map((x) => h("li", {},
+      h("span", { class: x.d < 0 ? "late" : x.d <= 1 ? "soon" : "", text: dayWord(x.d) }),
+      h("button", { class: "card-title", type: "button", text: x.a.title, onclick: () => openApp(x.a.id) }),
+      h("span", { class: "card-meta", text: x.text + " " + fmtDay(x.kind === "next" ? x.a.next_date : x.a.deadline) })))));
+}
+
+async function loadStats() {
+  const box = $("#stats");
+  try {
+    const s = await api("/api/stats");
+    box.hidden = !s.total;
+    if (!s.total) return;
+    const pct = s.goal ? Math.min(100, Math.round(100 * s.this_week / s.goal)) : 0;
+    const max = Math.max(1, ...s.weeks.map((w) => w.count));
+    box.replaceChildren(h("h3", { text: "Tilastot" }),
+      h("div", { class: "stat-grid" },
+        h("div", { class: "stat" }, h("b", { text: String(s.applied) }), h("span", { text: "hakemusta lähetetty" })),
+        h("div", { class: "stat" }, h("b", { text: String(s.responded) }), h("span", { text: "vastausta saatu (haastattelu, tarjous tai hylkäys)" })),
+        h("div", { class: "stat" }, h("b", { text: s.rate == null ? "–" : s.rate + " %" }), h("span", { text: "vastausprosentti" })),
+        h("div", { class: "stat" }, h("b", { text: String(s.counts.interview || 0) }), h("span", { text: "haastattelussa nyt" }))),
+      s.goal ? h("div", {},
+        h("div", { text: `Viikkotavoite: ${s.this_week} / ${s.goal} hakemusta tällä viikolla` }),
+        h("div", { class: "goalbar", role: "img", "aria-label": `${pct} % viikkotavoitteesta` }, h("span", { style: `width:${pct}%` }))) : null,
+      h("div", { class: "hint", style: "margin-top:10px", text: "Haetut hakemukset viikoittain (viimeiset 8 viikkoa, oikealla tämä viikko)" }),
+      h("div", { class: "weeks" }, s.weeks.map((w, i) => h("div", { class: i === s.weeks.length - 1 ? "cur" : "", style: `height:${Math.max(6, 100 * w.count / max)}%`, title: `Viikko ${fmtDay(w.start)}: ${w.count}` }))));
+  } catch { box.hidden = true; }
+}
+
+$("#backup-now").addEventListener("click", async () => {
+  try {
+    const d = await post("/api/backup");
+    $("#backup-msg").textContent = d.ok ? `Kopio tehty: backups/${d.name}` : "Ei kopioitavaa";
+  } catch (e) { $("#backup-msg").textContent = e.message; }
+});
+
+/* --- muokkausdialogi --- */
+function setDlgSaved(text, isErr = false) {
+  const el = $("#dlg-saved");
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = isErr ? "var(--err-ink)" : "";
+}
+
+function queueApp(id, key, value) {
+  if (!A.pending[id]) A.pending[id] = {};
+  A.pending[id][key] = value;
+  setDlgSaved("Tallennetaan");
+  clearTimeout(A.timer);
+  A.timer = setTimeout(flushApps, 600);
+}
+
+async function flushApps() {
+  clearTimeout(A.timer);
+  const entries = Object.entries(A.pending);
+  A.pending = {};
+  for (const [id, fields] of entries) {
+    try {
+      const d = await post("/api/apps", { action: "update", id, fields });
+      const a = A.apps.find((x) => x.id === id);
+      if (a && d.app) {
+        a.history = d.app.history; a.updated = d.app.updated;
+        if (fields.status) {
+          a.status = d.app.status; a.applied_date = d.app.applied_date;
+          if (A.openId === id && A.appliedEl) A.appliedEl.value = a.applied_date || "";
+        }
+      }
+      setDlgSaved("Tallennettu");
+    } catch (e) {
+      A.pending[id] = { ...fields, ...(A.pending[id] || {}) };
+      setDlgSaved("Tallennus epäonnistui: " + e.message, true);
+    }
+  }
+}
+
+const field = (label, input) => h("label", { class: "f" }, h("span", { class: "fl", text: label }), input);
+
+function openApp(id) {
+  const a = A.apps.find((x) => x.id === id);
+  if (!a) return;
+  A.openId = id;
+  const textIn = (key, o = {}) => {
+    const el = h("input", { class: "in", type: o.type || "text", value: a[key] || "", maxlength: o.max, placeholder: o.ph });
+    el.addEventListener("input", () => { a[key] = el.value; queueApp(id, key, el.value); });
+    return el;
+  };
+  const areaIn = (key, cls, max) => {
+    const el = h("textarea", { class: "in " + cls, maxlength: max }, a[key] || "");
+    el.addEventListener("input", () => { a[key] = el.value; queueApp(id, key, el.value); });
+    return el;
+  };
+
+  const title = $("#dlg-title");
+  title.value = a.title;
+  title.oninput = () => { a.title = title.value; queueApp(id, "title", title.value); };
+
+  const status = h("select", { class: "in", "aria-label": "Tila" },
+    Object.entries(STATUS_LABEL).map(([k, l]) => h("option", { value: k, selected: k === a.status, text: l })));
+  status.addEventListener("change", () => { a.status = status.value; queueApp(id, "status", status.value); });
+  const applied = textIn("applied_date", { type: "date" });
+  A.appliedEl = applied;
+
+  const savedAt = a.posting_saved ? fmtDay(a.posting_saved.slice(0, 10)) : "";
+  const del = h("button", { class: "btn danger", type: "button", text: "Poista hakemus", onclick: async () => {
+    if (!confirm("Poistetaanko hakemus ja siihen tallennettu ilmoitus?")) return;
+    clearTimeout(A.timer); delete A.pending[id];
+    try {
+      await post("/api/apps", { action: "delete", id });
+      $("#app-dialog").close();
+    } catch (e) { setDlgSaved(e.message, true); }
+  } });
+
+  $("#dlg-body").replaceChildren(
+    h("div", { class: "fgrid" },
+      field("Tila", status), field("Haettu pvm", applied), field("Hakuaika päättyy", textIn("deadline", { type: "date" }))),
+    h("div", { class: "fgrid" },
+      field("Yritys", textIn("company", { max: 120 })),
+      field("Sijainti", textIn("location", { max: 120 })),
+      field("Linkki ilmoitukseen", textIn("url", { max: 500, ph: "https://" }))),
+    a.url ? h("p", { style: "margin: -4px 0 14px" }, h("a", { class: "linkbtn", href: safeUrl(a.url), target: "_blank", rel: "noopener noreferrer", text: "Avaa ilmoitus uudessa välilehdessä" })) : null,
+    h("div", { class: "fgrid" },
+      field("Seuraava askel", textIn("next_step", { max: 300, ph: "esim. soita rekrytoijalle" })),
+      field("Seuraavan askeleen päivä", textIn("next_date", { type: "date" }))),
+    h("div", { class: "fgrid" },
+      field("Yhteyshenkilö", textIn("contact_name", { max: 120 })),
+      field("Sähköposti", textIn("contact_email", { type: "email", max: 160 })),
+      field("Puhelin", textIn("contact_phone", { type: "tel", max: 40 })),
+      field("Palkka tai palkkatoive", textIn("salary", { max: 120 }))),
+    field("Muistiinpanot", areaIn("notes", "", 10000)),
+    h("details", {},
+      h("summary", { text: "Tallennettu ilmoitus" + (savedAt ? ", tallennettu " + savedAt : "") }),
+      h("p", { class: "hint", style: "margin: 6px 0", text: a.posting_text ? "Tämä on kopio ilmoituksen tekstistä, ja se säilyy, vaikka alkuperäinen poistuisi. Voit muokata sitä." : "Ei tallennettua tekstiä. Liitä ilmoituksen teksti tähän, niin se säilyy." }),
+      areaIn("posting_text", "posting", 30000)),
+    (a.reasons && a.reasons.length) ? h("details", {}, h("summary", { text: `Miksi pisteet ${a.score} / 100` }),
+      h("ul", { class: "why-list" }, a.reasons.map((x) => h("li", { text: x })))) : null,
+    h("details", {}, h("summary", { text: "Tilahistoria" }),
+      h("ul", { class: "hist" }, (a.history || []).slice().reverse().map((x) =>
+        h("li", { text: `${STATUS_LABEL[x.status] || x.status}, ${new Intl.DateTimeFormat("fi-FI", { dateStyle: "short", timeStyle: "short" }).format(new Date(x.at))}` })))),
+    h("div", { class: "dlg-foot" }, del, h("span", { class: "dlg-saved", id: "dlg-saved", role: "status" })));
+  $("#app-dialog").showModal();
+}
+
+const dlg = $("#app-dialog");
+$("#dlg-close").addEventListener("click", () => dlg.close());
+dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+dlg.addEventListener("close", async () => {
+  A.openId = null; A.appliedEl = null;
+  await flushApps();
+  try { await loadApps(); } catch { /* palvelin ei vastaa */ }
+});
+$("#app-new").addEventListener("click", async () => {
+  try {
+    const d = await post("/api/apps", { action: "create", fields: {} });
+    await loadApps();
+    openApp(d.app.id);
+  } catch (e) { flash(e.message); }
+});
+
+/* ---------- osaamisprofiili ---------- */
+const P = { skills: [], categories: [], levels: [], suggestions: [], gaps: [], opsUrl: "", opsNote: "", timer: null, loaded: false };
+
+function setSaveState(text, isErr = false) {
+  const el = $("#save-state");
+  el.textContent = text;
+  el.classList.toggle("err", isErr);
+}
+
+async function loadSkills() {
+  const d = await api("/api/skills");
+  Object.assign(P, { skills: d.skills, categories: d.categories, levels: d.levels,
+    suggestions: d.suggestions, gaps: d.gaps, opsUrl: d.ops_url, opsNote: d.ops_note, loaded: true });
+  renderProfile();
+}
+
+function queueSave() {
+  setSaveState("Tallennetaan");
+  clearTimeout(P.timer);
+  P.timer = setTimeout(saveSkills, 600);
+}
+
+async function saveSkills() {
+  try {
+    await post("/api/skills", { skills: P.skills });
+    await loadJobs();                       // pisteet ovat päivittyneet palvelimella
+    const d = await api("/api/skills");
+    P.suggestions = d.suggestions; P.gaps = d.gaps;
+    renderSide();
+    setSaveState("Tallennettu, pisteet päivitetty");
+  } catch {
+    setSaveState("Tallennus epäonnistui. Tarkista, että webapp.py on käynnissä.", true);
+  }
+}
+
+const parseAliases = (s) => s.split(",").map((x) => x.trim()).filter(Boolean);
+
+function option(value, label, selected) {
+  return h("option", { value, selected: selected, text: label });
+}
+function levelLabel(l) { return l || "Ei asetettu"; }
+
+function skillRow(s) {
+  const cat = h("select", { class: "in", "aria-label": "Ryhmä" }, P.categories.map((c) => option(c, c, c === s.category)));
+  cat.addEventListener("change", () => { s.category = cat.value; renderSkills(); queueSave(); });
+  const lvl = h("select", { class: "in", "aria-label": "Oma taso" }, P.levels.map((l) => option(l, levelLabel(l), l === s.level)));
+  lvl.addEventListener("change", () => { s.level = lvl.value; queueSave(); });
+  return h("div", { class: "srow" },
+    h("input", { class: "in name", value: s.name, maxlength: "60", "aria-label": "Taidon nimi",
+      oninput: (e) => { s.name = e.target.value; queueSave(); } }),
+    h("input", { class: "in aliases", value: (s.aliases || []).join(", "), "aria-label": "Vaihtoehtoiset kirjoitusasut", placeholder: "ei vaihtoehtoja",
+      oninput: (e) => { s.aliases = parseAliases(e.target.value); queueSave(); } }),
+    lvl,
+    h("input", { class: "in weight", type: "number", min: "0", max: "5", step: "0.5", value: String(s.weight), "aria-label": "Painoarvo",
+      oninput: (e) => { s.weight = Math.max(0, Math.min(5, Number(e.target.value) || 0)); queueSave(); } }),
+    h("button", { class: "rm", type: "button", "aria-label": "Poista taito " + s.name, text: "Poista",
+      onclick: () => { P.skills = P.skills.filter((x) => x !== s); renderSkills(); queueSave(); } }));
+}
+
+function renderSkills() {
+  const box = $("#skill-groups");
+  box.replaceChildren();
+  const cats = P.categories.filter((c) => P.skills.some((s) => (P.categories.includes(s.category) ? s.category : "Muu") === c));
+  if (!cats.length) {
+    box.append(h("div", { class: "panel empty" }, h("h2", { text: "Ei vielä taitoja" }),
+      h("p", { text: "Lisää ensimmäinen taito yllä olevalla lomakkeella tai poimi ehdotus oikealta." })));
+    return;
+  }
+  for (const c of cats) {
+    const items = P.skills.filter((s) => (P.categories.includes(s.category) ? s.category : "Muu") === c);
+    box.append(h("section", { class: "group" },
+      h("h3", {}, c, h("span", { text: String(items.length) })),
+      h("div", { class: "col-head", "aria-hidden": true },
+        h("span", { text: "Taito" }), h("span", { text: "Vaihtoehtoiset kirjoitusasut" }),
+        h("span", { text: "Oma taso" }), h("span", { text: "Painoarvo" }), h("span")),
+      items.map(skillRow)));
+  }
+}
+
+function addSkill(skill) {
+  if (P.skills.some((s) => s.name.toLowerCase() === skill.name.toLowerCase())) return false;
+  P.skills.push(skill);
+  renderSkills(); renderSide(); queueSave();
+  return true;
+}
+
+function renderSide() {
+  const g = $("#gaps");
+  g.replaceChildren();
+  $("#gaps-hint").textContent = okRows().length < 3
+    ? "Näkyy, kun haku on tuonut ilmoituksia."
+    : "Tekniikat, jotka mainitaan vähintään kahdessa haetussa ilmoituksessa, mutta joita profiilissasi ei ole.";
+  if (okRows().length >= 3 && !P.gaps.length) g.append(h("li", { class: "sub", text: "Ei puutteita tunnetuista tekniikoista." }));
+  for (const x of P.gaps) {
+    g.append(h("li", {},
+      h("span", { class: "nm", text: x.name }),
+      h("span", { class: "sub", text: `${x.count} ilmoituksessa (${Math.round(x.share * 100)} %)` }),
+      h("button", { class: "btn", type: "button", text: "Lisää", "aria-label": "Lisää taito " + x.name,
+        onclick: () => addSkill({ name: x.name, aliases: [], category: "Muu", level: "", weight: 1, source: "ilmoitukset" }) })));
+  }
+  const o = $("#ops-sugg");
+  o.replaceChildren();
+  $("#ops-hint").textContent = P.opsNote;
+  const link = $("#ops-link");
+  link.href = safeUrl(P.opsUrl);
+  if (!P.suggestions.length) o.append(h("li", { class: "sub", text: "Kaikki ehdotukset on lisätty." }));
+  for (const x of P.suggestions) {
+    o.append(h("li", {},
+      h("span", { class: "nm", text: x.name }),
+      h("span", { class: "sub" }, "Moduuli: ", h("a", { href: safeUrl(x.url), target: "_blank", rel: "noopener noreferrer", text: x.module })),
+      h("button", { class: "btn", type: "button", text: "Lisää", "aria-label": "Lisää taito " + x.name,
+        onclick: () => addSkill({ name: x.name, aliases: x.aliases || [], category: x.category, level: "", weight: x.weight || 1, source: "ops" }) })));
+  }
+}
+
+function renderProfile() {
+  const cat = $("#a-cat"), lvl = $("#a-level");
+  if (!cat.options.length) {
+    cat.replaceChildren(...P.categories.map((c) => option(c, c, false)));
+    lvl.replaceChildren(...P.levels.map((l) => option(l, levelLabel(l), false)));
+  }
+  renderSkills(); renderSide();
+}
+
+$("#add-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const name = $("#a-name").value.trim();
+  const msg = $("#add-msg");
+  if (!name) return;
+  const ok = addSkill({
+    name, aliases: parseAliases($("#a-alias").value), category: $("#a-cat").value, level: $("#a-level").value,
+    weight: Math.max(0, Math.min(5, Number($("#a-weight").value) || 1)), source: "oma",
+  });
+  msg.textContent = ok ? "" : `"${name}" on jo profiilissa.`;
+  if (ok) { $("#add-form").reset(); $("#a-name").focus(); }
+});
+
+
+/* ---------- ilmoitussivu ---------- */
+const PART_MAX = { alue: 20, osaaminen: 35, taso: 30, ala: 15 };
+const BULLET = /^\s*(?:[-–•*▪●·✅✔➤→]|\d+[.)])\s+/;
+
+async function loadDetail(url, silent = false) {
+  D.url = url;
+  const box = $("#detail-body");
+  if (!silent) {
+    D.data = null;
+    box.replaceChildren(h("p", { class: "d-load", text: "Ladataan ilmoitusta…" }));
+    window.scrollTo(0, 0);
+  }
+  try {
+    const d = await api("/api/job?url=" + encodeURIComponent(url));
+    if (D.url !== url) return;
+    D.data = d;
+    renderDetail();
+  } catch (e) {
+    if (D.url !== url) return;
+    D.data = null;
+    box.replaceChildren(h("div", { class: "panel" },
+      h("p", { text: e.message }),
+      h("a", { class: "btn as-link", href: "#", text: "Takaisin listaan" })));
+  }
+}
+
+function renderDescription(text, clean) {
+  const wrap = h("div", { class: "d-desc" }, h("h3", { text: "Ilmoituksen kuvaus" }));
+  if (!clean) {
+    wrap.append(h("p", { class: "d-note", text: "Tämä ilmoitus on haettu vanhalla versiolla, joten teksti voi sisältää sivun valikkoja. Päivitä haku, niin saat siistin kuvauksen." }));
+  }
+  if (!text.trim()) { wrap.append(h("p", { class: "d-empty", text: "Ilmoituksen tekstiä ei ole tallennettu. Avaa alkuperäinen ilmoitus." })); return wrap; }
+  const lines = text.split("\n").map((l) => l.trim());
+  let list = null, para = [];
+  const flushPara = () => { if (para.length) { wrap.append(h("p", {}, para.join(" "))); para = []; } };
+  const flushList = () => { if (list) { wrap.append(list); list = null; } };
+  const nextText = (i) => { for (let k = i + 1; k < lines.length; k++) if (lines[k]) return lines[k]; return ""; };
+  lines.forEach((ln, i) => {
+    if (!ln) { flushPara(); flushList(); return; }
+    if (BULLET.test(ln)) {
+      flushPara();
+      if (!list) list = h("ul");
+      list.append(h("li", { text: ln.replace(BULLET, "") }));
+      return;
+    }
+    flushList();
+    const short = ln.length <= 70 && !/[.,;]$/.test(ln);
+    if (short && (BULLET.test(nextText(i)) || /[?:]$/.test(ln))) { flushPara(); wrap.append(h("h4", { class: "d-sub", text: ln.replace(/:$/, "") })); return; }
+    para.push(ln);
+  });
+  flushPara(); flushList();
+  return wrap;
+}
+
+function deadlineOf(r) {
+  const dd = (r.job.detail && r.job.detail.deadline) || r.deadline;
+  if (dd) return dd;
+  for (const x of r.reasons || []) {
+    const m = /^Hakuaika päättyy (\d\d)\.(\d\d)\.(\d{4})/.exec(x);
+    if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  }
+  return "";
+}
+
+function renderDetail() {
+  const d = D.data;
+  if (!d) return;
+  const r = d.row, j = r.job, ins = d.insights, det = j.detail || {};
+  const st = S.state[j.url] || {};
+  const app = appByUrl().get(j.url);
+  const dl = deadlineOf(r);
+  const left = dl ? daysUntil(dl) : null;
+  const where = det.places && det.places.length ? det.places.join(", ") : (j.location || r.area || "");
+
+  const head = h("div", { class: "d-head" },
+    h("h2", { text: j.title }),
+    h("div", { class: "meta" },
+      j.company ? h("span", { text: j.company }) : null,
+      where ? h("span", { text: where }) : null,
+      j.source ? h("span", { class: "src", text: srcName(j.source) }) : null,
+      det.posted ? h("span", { text: "Julkaistu " + fmtDay(det.posted) }) : null),
+    h("div", { class: "d-chips" },
+      det.employment ? h("span", { class: "chip", text: det.employment }) : null,
+      det.salary ? h("span", { class: "chip", text: "Palkka " + det.salary }) : null,
+      dl ? h("span", { class: "chip" + (left <= 3 ? " chip-warn" : ""),
+        text: left < 0 ? "Hakuaika päättyi " + fmtDay(dl) : left === 0 ? "Hakuaika päättyy tänään" : `Hakuaika päättyy ${fmtDay(dl)} (${left} pv)` }) : null,
+      det.company_url ? h("a", { class: "chip", href: safeUrl(det.company_url), target: "_blank", rel: "noopener noreferrer", text: "Yrityksen sivut" }) : null,
+      d.gone ? h("span", { class: "chip chip-gone", text: "Ei enää haettavissa (havaittu " + fmtDay(d.gone) + ")" }) : null,
+      app ? h("span", { class: "chip chip-done", text: "Seurannassa: " + STATUS_LABEL[app.status] }) : null));
+
+  const actions = h("div", { class: "d-actions" },
+    j.url.startsWith("manual://") ? null : h("a", { class: "btn primary as-link", href: safeUrl(j.url), target: "_blank", rel: "noopener noreferrer", text: "Avaa alkuperäinen ilmoitus" }),
+    h("button", { class: "btn" + (j.url.startsWith("manual://") ? " primary" : ""), type: "button", text: "Kopioi Claude-pyyntö", onclick: (e) => copyPrompt(e.target, r, ins, dl) }),
+    j.source === "manual" ? h("button", { class: "btn danger", type: "button", text: "Poista", onclick: async () => {
+      if (!confirm("Poistetaanko käsin lisätty ilmoitus?")) return;
+      try { await post("/api/manual", { action: "delete", url: j.url }); location.hash = "#"; await loadJobs(); } catch (err) { flash(err.message); }
+    } }) : null,
+    h("button", { class: "btn", type: "button", "aria-pressed": !!st.saved, text: st.saved ? "Tallennettu" : "Tallenna", onclick: () => setState(j.url, "saved", !st.saved) }),
+    app
+      ? h("button", { class: "btn", type: "button", text: "Avaa seurantakortti", onclick: () => { location.hash = "#hakemukset"; setTimeout(() => openApp(app.id), 50); } })
+      : h("button", { class: "btn", type: "button", text: "Lisää seurantaan", onclick: () => addToTracker(j.url) }),
+    h("button", { class: "btn", type: "button", text: st.hidden ? "Palauta" : "Piilota", onclick: () => setState(j.url, "hidden", !st.hidden) }),
+    h("button", { class: "btn", type: "button", text: "Tarkista, onko vielä auki", onclick: async (e) => {
+      e.target.disabled = true; e.target.textContent = "Tarkistetaan…";
+      try {
+        const res = await post("/api/recheck", { url: j.url });
+        flash(res.result === true ? "Ilmoitus ei ole enää haettavissa." : res.result === false ? "Ilmoitus on yhä auki." : "Tilaa ei saatu selville (ei yhteyttä tai sivu ei kerro).");
+        await loadJobs();
+      } catch (err) { flash(err.message); }
+      e.target.disabled = false; e.target.textContent = "Tarkista, onko vielä auki";
+    } }));
+
+  const scorePanel = h("section", { class: "panel" },
+    h("h3", { text: "Pisteet" }),
+    h("div", { class: "d-score" }, fitBar(r)),
+    h("ul", { class: "d-parts" }, PARTS.map(([k, l]) => h("li", {},
+      h("span", { text: l }),
+      h("span", { class: "pb" }, h("span", { style: `width:${Math.max(0, Math.min(100, r.parts[k] / PART_MAX[k] * 100))}%;background:var(--c-${k})` })),
+      h("span", { class: "pv", text: `${Math.round(r.parts[k])} / ${PART_MAX[k]}` })))),
+    r.reasons && r.reasons.length ? h("ul", { class: "d-reasons" }, r.reasons.map((x) => h("li", { text: x }))) : null);
+
+  const skillsPanel = h("section", { class: "panel" },
+    h("h3", { text: "Osaamisesi tässä ilmoituksessa" }),
+    ins.matched.length
+      ? h("div", { class: "tagset" }, ins.matched.map((m) => h("span", { class: "tag", title: "Painoarvo " + m.weight, text: m.name })))
+      : h("p", { class: "d-empty", text: "Ilmoituksessa ei mainita profiilisi taitoja." }),
+    ins.missing.length ? h("div", {},
+      h("div", { class: "d-sec", text: "Mainitaan, mutta ei profiilissasi" }),
+      h("div", { class: "tagset" }, ins.missing.map((n) => h("button", { class: "tag miss", type: "button", title: "Lisää profiiliin", onclick: () => addSkillFromJob(n), text: "+ " + n })))) : null);
+
+  const reqBlock = (title, items) => items.length ? h("div", {}, h("div", { class: "d-sec", text: title }), h("ul", { class: "d-list" }, items.map((x) => h("li", { text: x })))) : null;
+  const reqs = [reqBlock("Kokemus", ins.experience), reqBlock("Kielet", ins.languages), reqBlock("Työtapa", ins.mode)].filter(Boolean);
+  const reqPanel = h("section", { class: "panel" },
+    h("h3", { text: "Vaatimukset ja ehdot" }),
+    reqs.length ? reqs : h("p", { class: "d-empty", text: "Kokemus-, kieli- tai etätyömainintoja ei tunnistettu automaattisesti. Lue kuvaus." }));
+
+  const samePanel = ins.same_company.length ? h("section", { class: "panel" },
+    h("h3", { text: "Saman yrityksen muut paikat" }),
+    h("ul", { class: "d-list" }, ins.same_company.map((o) => h("li", {},
+      h("a", { href: "#ilmoitus/" + encodeURIComponent(o.url), text: o.title }), " · " + Math.round(o.score) + " p")))) : null;
+
+  $("#detail-body").replaceChildren(
+    h("a", { class: "d-back", href: "#", text: "← Takaisin listaan" }),
+    head, actions,
+    h("div", { class: "d-grid" },
+      h("div", { class: "panel" }, renderDescription(ins.description || "", ins.clean)),
+      h("aside", {}, scorePanel, skillsPanel, reqPanel, samePanel)));
+}
+
+async function copyPrompt(btn, r, ins, dl) {
+  try { if (!P.loaded) await loadSkills(); } catch { /* ilman taitolistaa */ }
+  const j = r.job, det = j.detail || {};
+  const have = P.skills.filter((s) => s.weight > 0).map((s) => s.name + (s.level ? ` (${s.level})` : "")).join(", ");
+  const txt = [
+    "Auta minua hakemaan tätä työpaikkaa. Olen IT-alan opiskelija.",
+    "",
+    `Työpaikka: ${j.title}`, `Yritys: ${j.company || "-"}`,
+    `Paikka: ${(det.places && det.places.join(", ")) || j.location || r.area || "-"}`,
+    dl ? `Hakuaika päättyy: ${dl}` : "",
+    "", "Ilmoituksen teksti:", ins.description || "(ei tekstiä)", "",
+    `Taitoni: ${have || "(ei listattu)"}`,
+    `Ilmoituksessa mainitut taidot, jotka minulla on: ${ins.matched.map((m) => m.name).join(", ") || "-"}`,
+    `Ilmoituksessa mainitut taidot, joita profiilissani ei vielä ole: ${ins.missing.join(", ") || "-"}`,
+    "", "Tee ensin lyhyt arvio, kuinka hyvin profiilini sopii tähän ja mitä kannattaa korostaa. Kirjoita sen jälkeen hakemuksen luonnos suomeksi (noin 200 sanaa), joka perustuu vain yllä oleviin tietoihin. Älä keksi kokemusta, jota minulla ei ole.",
+  ].filter((x, i, a) => x !== "" || a[i - 1] !== "").join("\n");
+  let ok = false;
+  try { await navigator.clipboard.writeText(txt); ok = true; } catch {
+    const ta = h("textarea", { style: "position:fixed;left:-999px" }, txt);
+    document.body.append(ta); ta.select();
+    try { ok = document.execCommand("copy"); } catch { /* ei onnistu */ }
+    ta.remove();
+  }
+  const old = btn.textContent;
+  btn.textContent = ok ? "Kopioitu leikepöydälle" : "Kopiointi epäonnistui";
+  setTimeout(() => { btn.textContent = old; }, 2500);
+}
+
+async function addSkillFromJob(name) {
+  try {
+    if (!P.loaded) await loadSkills();
+    const cat = P.categories.includes("Muu") ? "Muu" : (P.categories[0] || "");
+    const ok = addSkill({ name, aliases: [], weight: 1, level: "", category: cat, source: "ilmoitus" });
+    flash(ok ? `Lisätty profiiliin: ${name}. Pisteet päivittyvät hetken päästä.` : `${name} on jo profiilissa.`);
+  } catch (e) { flash(e.message); }
+}
+
+
+/* ---------- vertailu ---------- */
+function toggleCmp(url) {
+  const i = S.cmp.indexOf(url);
+  if (i >= 0) S.cmp.splice(i, 1);
+  else if (S.cmp.length >= 3) { flash("Vertailussa voi olla enintään 3 ilmoitusta."); return; }
+  else S.cmp.push(url);
+  renderMain();
+}
+
+function renderCmpBar() {
+  const bar = $("#cmpbar");
+  bar.hidden = !S.cmp.length;
+  if (!S.cmp.length) return;
+  bar.replaceChildren(
+    h("span", { text: `Vertailussa ${S.cmp.length} / 3` }),
+    h("button", { class: "btn primary", type: "button", disabled: S.cmp.length < 2, text: "Vertaa", onclick: () => { location.hash = "#vertailu"; } }),
+    h("button", { class: "linkbtn", type: "button", text: "Tyhjennä", onclick: () => { S.cmp = []; renderMain(); } }));
+}
+
+async function renderCompare() {
+  const box = $("#view-compare");
+  box.replaceChildren(h("div", { class: "p-head" }, h("h2", { text: "Ilmoitusten vertailu" }), h("p", { text: "Ladataan…" })));
+  if (S.cmp.length < 2) {
+    box.replaceChildren(h("div", { class: "p-head" }, h("h2", { text: "Ilmoitusten vertailu" }),
+      h("p", { text: "Valitse työpaikkalistasta vähintään kaksi ilmoitusta Vertaa-napilla." }), h("a", { class: "btn as-link", href: "#", text: "Takaisin listaan" })));
+    return;
+  }
+  let data;
+  try { data = await Promise.all(S.cmp.map((u) => api("/api/job?url=" + encodeURIComponent(u)))); }
+  catch (e) { box.replaceChildren(h("div", { class: "panel" }, h("p", { text: e.message }), h("a", { class: "btn as-link", href: "#", text: "Takaisin listaan" }))); return; }
+  const list = (arr) => arr && arr.length ? h("ul", {}, arr.map((x) => h("li", { text: x }))) : "–";
+  const rows = [
+    ["Yritys", (d) => d.row.job.company || "–"],
+    ["Paikka", (d) => (d.row.job.detail && d.row.job.detail.places && d.row.job.detail.places.join(", ")) || d.row.job.location || d.row.area || "–"],
+    ["Pisteet", (d) => `${Math.round(d.row.score)} / 100`],
+    ...PARTS.map(([k, l]) => [l, (d) => `${Math.round(d.row.parts[k])} / ${PART_MAX[k]}`]),
+    ["Hakuaika", (d) => { const dl = deadlineOf(d.row); return dl ? `${fmtDay(dl)} (${daysUntil(dl)} pv)` : "–"; }],
+    ["Työsuhde", (d) => (d.row.job.detail && d.row.job.detail.employment) || "–"],
+    ["Palkka", (d) => (d.row.job.detail && d.row.job.detail.salary) || "–"],
+    ["Osaamisesi", (d) => d.insights.matched.length ? d.insights.matched.map((m) => m.name).join(", ") : "–"],
+    ["Puuttuu profiilistasi", (d) => d.insights.missing.length ? d.insights.missing.join(", ") : "–"],
+    ["Kokemus", (d) => list(d.insights.experience)],
+    ["Kielet", (d) => list(d.insights.languages)],
+    ["Työtapa", (d) => list(d.insights.mode)],
+  ];
+  const head = h("tr", {}, h("th", { scope: "col", text: "" }), data.map((d) => h("th", { scope: "col" },
+    h("a", { href: "#ilmoitus/" + encodeURIComponent(d.row.job.url), text: d.row.job.title }))));
+  const table = h("table", { class: "cmp" }, h("thead", {}, head),
+    h("tbody", {}, rows.map(([label, fn]) => h("tr", {}, h("th", { scope: "row", text: label }), data.map((d) => h("td", {}, fn(d)))))));
+  box.replaceChildren(
+    h("div", { class: "p-head" }, h("h2", { text: "Ilmoitusten vertailu" }),
+      h("button", { class: "btn", type: "button", text: "Muokkaa valintaa", onclick: () => { location.hash = "#"; } })),
+    h("div", { class: "cmp-wrap" }, table));
+}
+
+/* ---------- yritykset ---------- */
+const CO = { data: null };
+
+const CO_STALE_DAYS = 7;
+const coStale = (c) => c.days_since_check == null || c.days_since_check > CO_STALE_DAYS;
+
+function updateCoBadge() {
+  const n = CO.data ? CO.data.companies.filter(coStale).length : 0;
+  $("#nav-co-due").textContent = n ? String(n) : "";
+}
+
+async function loadCompanies() {
+  CO.data = await api("/api/companies");
+  updateCoBadge();
+  renderCompanies();
+}
+
+async function companyCall(body) {
+  try { CO.data = await post("/api/companies", body); updateCoBadge(); renderCompanies(); }
+  catch (e) { flash(e.message); }
+}
+
+function renderCompanies() {
+  const box = $("#view-companies");
+  const d = CO.data;
+  if (!d) { box.replaceChildren(h("p", { class: "d-load", text: "Ladataan…" })); return; }
+  const name = h("input", { class: "in", maxlength: 100, placeholder: "Yrityksen nimi", "aria-label": "Yrityksen nimi" });
+  const link = h("input", { class: "in", maxlength: 500, placeholder: "Rekrysivun osoite (valinnainen)", "aria-label": "Rekrysivun osoite" });
+  const addForm = h("form", { class: "panel fgrid", onsubmit: (e) => { e.preventDefault(); if (name.value.trim()) companyCall({ action: "add", fields: { name: name.value, careers_url: link.value } }); } },
+    field("Yritys", name), field("Rekrysivu", link), h("button", { class: "btn primary", type: "submit", text: "Lisää seurantaan" }));
+  const cards = d.companies.map((c) => {
+    const notes = h("textarea", { class: "in", rows: 2, maxlength: 2000, placeholder: "Muistiinpanot", "aria-label": "Muistiinpanot " + c.name }, c.notes || "");
+    notes.addEventListener("change", () => companyCall({ action: "update", id: c.id, fields: { notes: notes.value } }));
+    const q = encodeURIComponent(c.name + " rekry avoimet työpaikat harjoittelu");
+    return h("section", { class: "panel co-card" },
+      h("h3", { text: c.name }),
+      h("div", {},
+        c.careers_url ? h("a", { class: "linkbtn", href: safeUrl(c.careers_url), target: "_blank", rel: "noopener noreferrer", text: "Rekrysivu" }) : null, " ",
+        h("a", { class: "linkbtn", href: "https://www.google.com/search?q=" + q, target: "_blank", rel: "noopener noreferrer", text: "Etsi avoimet paikat" })),
+      h("div", { style: "grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap" },
+        h("span", { class: "chip" + (coStale(c) ? " chip-warn" : " chip-done"),
+          text: c.days_since_check == null ? "Rekrysivu tarkistamatta" : c.days_since_check === 0 ? "Rekrysivu tarkistettu tänään" : `Rekrysivu tarkistettu ${c.days_since_check} pv sitten` }),
+        h("button", { class: "btn", type: "button", text: "Tarkistettu tänään", onclick: () => companyCall({ action: "check", id: c.id }) })),
+      h("div", { class: "hint", style: "grid-column:1/-1;margin:0", text: c.open_count ? `${c.open_count} avointa ilmoitusta hakutuloksissa` : "Ei ilmoituksia hakutuloksissa" }),
+      c.open_jobs.length ? h("ul", { class: "d-list", style: "grid-column:1/-1" }, c.open_jobs.map((o) => h("li", {},
+        h("a", { href: "#ilmoitus/" + encodeURIComponent(o.url), text: o.title }), ` · ${o.score} p`))) : null,
+      h("div", { style: "grid-column:1/-1" }, notes),
+      h("div", { style: "grid-column:1/-1" }, h("button", { class: "btn danger", type: "button", text: "Poista", onclick: () => { if (confirm("Poistetaanko " + c.name + " listalta?")) companyCall({ action: "delete", id: c.id }); } })));
+  });
+  box.replaceChildren(
+    h("div", { class: "p-head" }, h("h2", { text: "Yritykset" }),
+      h("p", { text: "Seuraa työnantajia, joista olet kiinnostunut. Näet kunkin avoimet ilmoitukset hakutuloksista ja pääset etsimään uusia paikkoja yrityksen omilta sivuilta." })),
+    addForm,
+    d.suggested.length ? h("div", { class: "panel" }, h("h3", { text: "Isot yritykset ja Vaasan työnantajat" }),
+      h("p", { class: "hint", text: "Valmiiksi tarkistetut rekrysivut (avattu 8.10.2026). Lisää yksitellen tai kaikki kerralla." }),
+      h("button", { class: "btn primary", type: "button", style: "margin-bottom:10px", text: `Lisää kaikki (${d.suggested.length})`, onclick: () => companyCall({ action: "add_catalog" }) }),
+      h("div", { class: "tagset" }, d.suggested.map((n) => h("button", { class: "tag miss", type: "button", title: n.group, text: "+ " + n.name, onclick: () => companyCall({ action: "add", fields: { name: n.name, careers_url: n.careers_url } }) })))) : null,
+    cards.length ? h("div", {}, cards) : h("p", { class: "d-empty", text: "Ei vielä seurattuja yrityksiä." }));
+}
+
+/* ---------- asetukset ---------- */
+function renderFeedback(f) {
+  const box = $("#fb-panel");
+  if (!box) return;
+  const items = [];
+  const addTerm = async (key, val) => {
+    try {
+      const cur = ST.data[key] || [];
+      const r = await post("/api/settings", { [key]: [...cur, val] });
+      ST.data = r.settings; await loadJobs(); api("/api/feedback").then(renderFeedback);
+    } catch (e) { flash(e.message); }
+  };
+  for (const x of f.exclude) items.push(["Piilotit " + x.count + " ilmoitusta, joiden otsikossa on '" + x.term + "', etkä tallentanut yhtään.", "Poissulje '" + x.term + "'", () => addTerm("exclude_title_terms", x.term)]);
+  for (const x of f.block) items.push(["Piilotit " + x.count + " ilmoitusta yritykseltä " + x.company + ".", "Estä yritys", () => addTerm("block_companies", x.company)]);
+  for (const x of f.watch) items.push(["Tallensit tai haet " + x.count + " paikkaa yritykseltä " + x.company + ".", "Lisää Yritykset-listalle", async () => { await companyCall({ action: "add", fields: { name: x.company } }); api("/api/feedback").then(renderFeedback); }]);
+  box.replaceChildren(h("h3", { text: "Ehdotuksia valinnoistasi" }),
+    h("p", { class: "hint", text: `Piilotettuja ${f.hidden}, tallennettuja tai haettuja ${f.liked}. Ehdotukset perustuvat siihen, mitä olet piilottanut ja tallentanut.` }),
+    items.length ? h("ul", { class: "slist" }, items.map(([t, label, fn]) => h("li", {}, h("span", { class: "nm", text: t }), h("button", { class: "btn", type: "button", text: label, onclick: fn }))))
+      : h("p", { class: "d-empty", text: f.hidden + f.liked < 8 ? "Ehdotuksia tulee, kun olet piilottanut tai tallentanut vähintään 8 ilmoitusta." : "Ei ehdotuksia juuri nyt." }));
+}
+
+const ST = { data: null };
+const LISTS = [
+  ["level_positive", "Taso: plussaa (esim. harjoittelija, junior)"],
+  ["level_negative", "Taso: miinusta (esim. senior, 5+ years)"],
+  ["title_senior_terms", "Otsikon senior-sanat (rajaavat pisteet 40:een)"],
+  ["field_title_terms", "Ala: ohjelmistokehitys otsikossa"],
+  ["it_title_terms", "Ala: yleinen IT otsikossa (IT-tuki yms.)"],
+  ["it_body_terms", "Ala: IT-sanat kuvauksessa"],
+  ["exclude_title_terms", "Poissulje otsikosta"],
+  ["remote_terms", "Etätyösanat"],
+  ["block_companies", "Estetyt työnantajat"],
+];
+const lines = (a) => (a || []).join("\n");
+const unlines = (t) => t.split("\n").map((x) => x.trim()).filter(Boolean);
+
+async function loadSettings() {
+  ST.data = await api("/api/settings");
+  renderSettings();
+}
+
+function renderSettings() {
+  const box = $("#view-settings"), d = ST.data;
+  if (!d) { box.replaceChildren(h("p", { class: "d-load", text: "Ladataan…" })); return; }
+  const ta = (label, v, id) => h("label", { class: "f" }, h("span", { class: "fl", text: label }), h("textarea", { class: "in", id, rows: 8 }, lines(v)));
+  const num = (label, v, id, min, max, step = 1) => field(label, h("input", { class: "in", id, type: "number", min, max, step, value: v }));
+  const locBox = h("div", { id: "set-locs" });
+  const addLoc = (l = { name: "", weight: 10, aliases: [] }) => locBox.append(h("div", { class: "loc-row" },
+    h("input", { class: "in", "aria-label": "Alue", placeholder: "Alue", value: l.name }),
+    h("input", { class: "in", type: "number", min: 0, max: 20, step: 1, "aria-label": "Paino", value: l.weight }),
+    h("input", { class: "in", "aria-label": "Kirjoitusasut pilkulla", placeholder: "kirjoitusasut pilkulla", value: (l.aliases || []).join(", ") }),
+    h("button", { class: "btn", type: "button", text: "Poista", onclick: (e) => e.target.parentElement.remove() })));
+  d.locations.forEach(addLoc);
+  const msg = h("span", { class: "hint", id: "set-msg", role: "status" });
+  const bkList = h("ul", { class: "d-list", id: "bk-list" });
+  api("/api/feedback").then((f) => renderFeedback(f)).catch(() => {});
+  api("/api/backups").then((b) => bkList.replaceChildren(...b.backups.slice(0, 8).map((x) => h("li", { text: `backups/${x.name}` })))).catch(() => {});
+
+  const form = h("form", { onsubmit: async (e) => {
+    e.preventDefault();
+    const val = (id) => $("#" + id).value;
+    const body = {
+      queries: unlines(val("set-queries")), areas: unlines(val("set-areas")),
+      broad_enabled: $("#set-broad").checked, max_pages: val("set-pages"), max_jobs: val("set-jobs"), workers: val("set-workers"),
+      remote_bonus: val("set-remote"), skills_target: val("set-target"), weekly_goal: val("set-goal"),
+      locations: [...locBox.children].map((row) => {
+        const [n, w, a] = row.querySelectorAll("input");
+        return { name: n.value, weight: w.value, aliases: a.value.split(",") };
+      }),
+    };
+    for (const [k] of LISTS) body[k] = unlines(val("set-" + k));
+    msg.textContent = "Tallennetaan ja pisteytetään uudelleen…";
+    try {
+      const r = await post("/api/settings", body);
+      ST.data = r.settings; msg.textContent = "Tallennettu. Pisteet päivitetty; hakusanat ja alueet vaikuttavat seuraavaan hakuun.";
+      await loadJobs();
+    } catch (err) { msg.textContent = "Tallennus epäonnistui: " + err.message; msg.style.color = "var(--err-ink)"; }
+  } },
+    h("section", { class: "panel" }, h("h3", { text: "Haku" }),
+      h("p", { class: "hint", text: "Muutokset vaikuttavat seuraavaan hakuun. Alueen nimen pitää olla sellainen kuin Duunitorin hakukentässä (esim. Vaasa)." }),
+      h("div", { class: "set-grid" }, ta("Hakusanat (yksi per rivi)", d.queries, "set-queries"), ta("Alueet (yksi per rivi)", d.areas, "set-areas")),
+      h("label", { class: "check", style: "margin:12px 0" }, h("input", { id: "set-broad", type: "checkbox", checked: d.broad_enabled }), " Laaja haku: käy kaikki alueen ilmoitukset läpi hakusanoista riippumatta"),
+      h("div", { class: "fgrid" }, num("Sivuja per alue enintään", d.max_pages, "set-pages", 1, 300), num("Ilmoituksia enintään", d.max_jobs, "set-jobs", 100, 20000, 100), num("Rinnakkaisia työläisiä", d.workers, "set-workers", 1, 8))),
+    h("section", { class: "panel" }, h("h3", { text: "Alueet ja pisteet" }),
+      h("p", { class: "hint", text: "Paino 0–20 on alueen pistemäärä. Kirjoitusasuilla tunnistetaan alue ilmoituksesta." }),
+      locBox, h("button", { class: "btn", type: "button", text: "Lisää alue", onclick: () => addLoc() }),
+      h("div", { class: "fgrid", style: "margin-top:14px" }, num("Etätyöbonus (0–10)", d.remote_bonus, "set-remote", 0, 10, 0.5), num("Osaamistavoite (montako taitoa täyttää osaamispisteet)", d.skills_target, "set-target", 1, 50), num("Viikkotavoite (hakemusta)", d.weekly_goal, "set-goal", 0, 100))),
+    h("section", { class: "panel" }, h("h3", { text: "Sanalistat" }),
+      h("p", { class: "hint", text: "Yksi sana tai ilmaus per rivi. Isoilla ja pienillä kirjaimilla ei ole väliä." }),
+      h("div", { class: "set-grid" }, LISTS.map(([k, label]) => ta(label, d[k], "set-" + k)))),
+    h("div", { class: "toolbar" }, h("button", { class: "btn primary", type: "submit", text: "Tallenna asetukset" }), msg));
+
+  box.replaceChildren(
+    h("div", { class: "p-head" }, h("h2", { text: "Asetukset" }),
+      h("p", { text: "Muokkaa hakua ja pisteytystä ilman, että tarvitsee avata tiedostoja. Edellinen profile.json säilyy tiedostona profile.json.bak." })),
+    form,
+    h("section", { class: "panel", id: "fb-panel" }, h("h3", { text: "Ehdotuksia valinnoistasi" }), h("p", { class: "hint", text: "Ladataan…" })),
+    h("section", { class: "panel" }, h("h3", { text: "Varmuuskopiot ja viennit" }),
+      h("p", { class: "hint", text: "Hakemukset, osaamisprofiili, asetukset, yritykset ja tallennukset kopioidaan automaattisesti kerran päivässä backups-kansioon (14 uusinta säilyy)." }),
+      h("div", { class: "toolbar" },
+        h("button", { class: "btn", type: "button", text: "Varmuuskopioi nyt", onclick: async () => {
+          try { const r = await post("/api/backup"); flash(r.ok ? "Kopio tehty: backups/" + r.name : "Ei kopioitavaa"); loadSettings(); } catch (e) { flash(e.message); } } }),
+        h("a", { class: "btn as-link", href: "/api/export/hakemukset.csv", download: true, text: "Hakemukset CSV" }),
+        h("a", { class: "btn as-link", href: "/api/export/ilmoitukset.csv", download: true, text: "Ilmoitukset CSV" }),
+        h("a", { class: "btn as-link", href: "/api/export/kalenteri.ics", download: true, text: "Kalenteri (.ics)" })),
+      bkList));
+}
+
+/* ---------- näkymät ---------- */
+function showView(name, arg) {
+  const views = { jobs: "#view-jobs", apps: "#view-apps", profile: "#view-profile", detail: "#view-detail",
+    companies: "#view-companies", settings: "#view-settings", compare: "#view-compare" };
+  for (const [k, sel] of Object.entries(views)) $(sel).hidden = k !== name;
+  const navName = name === "detail" || name === "compare" ? "jobs" : name;
+  for (const b of document.querySelectorAll(".nav button")) {
+    b.setAttribute("aria-current", b.dataset.view === navName ? "page" : "false");
+  }
+  $("#refresh").hidden = name !== "jobs";
+  if (name === "profile") {
+    if (!P.loaded) loadSkills().catch(() => setSaveState("Osaamisprofiilia ei voitu ladata.", true));
+    else renderSide();
+  }
+  if (name === "apps") { loadApps().catch(() => {}); loadStats(); }
+  if (name === "companies") { renderCompanies(); loadCompanies().catch((e) => flash(e.message)); }
+  if (name === "settings") { renderSettings(); loadSettings().catch((e) => flash(e.message)); }
+  if (name === "compare") renderCompare();
+  if (name === "detail") { loadDetail(arg); return; }
+  D.url = null; D.data = null;
+  const hash = { profile: "#osaaminen", apps: "#hakemukset", jobs: "#", companies: "#yritykset", settings: "#asetukset", compare: "#vertailu" }[name];
+  try { history.replaceState(null, "", hash); } catch { /* ei haittaa */ }
+  if (name === "jobs" && S.scroll) { const y = S.scroll; S.scroll = 0; requestAnimationFrame(() => window.scrollTo(0, y)); }
+}
+function route() {
+  const hsh = location.hash;
+  if (hsh.startsWith("#ilmoitus/")) {
+    let url = "";
+    try { url = decodeURIComponent(hsh.slice(10)); } catch { /* virheellinen linkki */ }
+    return showView("detail", url);
+  }
+  showView({ "#osaaminen": "profile", "#hakemukset": "apps", "#yritykset": "companies", "#asetukset": "settings", "#vertailu": "compare" }[hsh] || "jobs");
+}
+window.addEventListener("hashchange", route);
+for (const b of document.querySelectorAll(".nav button")) b.addEventListener("click", () => showView(b.dataset.view));
+
+/* ---------- käsin lisätty ilmoitus ---------- */
+const mdlg = $("#manual-dialog");
+$("#man-close").addEventListener("click", () => mdlg.close());
+mdlg.addEventListener("click", (e) => { if (e.target === mdlg) mdlg.close(); });
+$("#manual-add").addEventListener("click", () => {
+  const inp = (id, label, o = {}) => field(label, h("input", { class: "in", id, type: o.type || "text", maxlength: o.max, placeholder: o.ph }));
+  const text = h("textarea", { class: "in posting", id: "man-text", maxlength: 40000, placeholder: "Liitä ilmoituksen koko teksti tähän", required: true });
+  const msg = h("div", { role: "alert", class: "hint", id: "man-msg" });
+  $("#man-form").replaceChildren(
+    h("div", { class: "fgrid" }, inp("man-t", "Otsikko", { max: 200 }), inp("man-c", "Yritys", { max: 120 }), inp("man-l", "Paikkakunta", { max: 120, ph: "esim. Vaasa" })),
+    h("div", { class: "fgrid" }, inp("man-u", "Linkki ilmoitukseen (valinnainen)", { max: 500, ph: "https://" }), inp("man-d", "Hakuaika päättyy", { type: "date" })),
+    field("Ilmoituksen teksti", text), msg,
+    h("p", { class: "hint", text: "Ilmoitus pisteytetään samoilla säännöillä kuin haetut. Jos sama paikka on jo listassa, sovellus kertoo siitä." }),
+    h("button", { class: "btn primary", type: "submit", text: "Lisää ja pisteytä" }));
+  mdlg.showModal();
+});
+$("#man-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const v = (id) => $("#" + id).value;
+  const msg = $("#man-msg");
+  msg.textContent = "Pisteytetään…";
+  try {
+    const d = await post("/api/manual", { action: "add", fields: { title: v("man-t"), company: v("man-c"), location: v("man-l"), url: v("man-u"), deadline: v("man-d"), text: v("man-text") } });
+    if (d.duplicate) { mdlg.close(); flash("Sama ilmoitus on jo listassa. Avasin sen."); location.hash = "#ilmoitus/" + encodeURIComponent(d.duplicate); return; }
+    mdlg.close(); await loadJobs(); location.hash = "#ilmoitus/" + encodeURIComponent(d.url);
+  } catch (err) { msg.textContent = err.message; }
+});
+
+/* ---------- tapahtumat ---------- */
+$("#refresh").addEventListener("click", startRefresh);
+$("#clear").addEventListener("click", clearFilters);
+$("#q").addEventListener("input", (e) => { S.f.q = e.target.value; saveFilters(); renderMain(); });
+$("#min").addEventListener("input", (e) => { S.f.min = Number(e.target.value); $("#min-out").textContent = S.f.min; saveFilters(); renderMain(); });
+$("#only-new").addEventListener("change", (e) => { S.f.onlyNew = e.target.checked; saveFilters(); renderMain(); });
+$("#only-watch").addEventListener("change", (e) => { S.f.onlyWatch = e.target.checked; saveFilters(); renderMain(); });
+$("#only-urgent").addEventListener("change", (e) => { S.f.onlyUrgent = e.target.checked; saveFilters(); renderMain(); });
+$("#sort").addEventListener("change", (e) => { S.f.sort = e.target.value; saveFilters(); renderMain(); });
+
+const mq = window.matchMedia("(min-width: 901px)");
+const syncRail = () => { $("#filters").open = mq.matches; };
+mq.addEventListener("change", syncRail);
+syncRail();
+
+loadFilters();
+renderAll();
+loadJobs().catch(() => { S.offline = true; renderBanner(); });
+pollStatus();
+setInterval(pollStatus, 2000);
+loadApps().catch(() => { /* seuranta ei vielä saatavilla */ });
+loadCompanies().catch(() => { /* yritykset eivät vielä saatavilla */ });
+route();
+</script>
+</body>
+</html>

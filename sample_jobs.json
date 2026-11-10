@@ -1,0 +1,16 @@
+[
+  {"title": "Ohjelmistokehitysharjoittelija / Päättötyöprojektin tekijä (.NET / React)", "company": "Vitec Software Group", "location": "Tampere", "url": "https://example.com/vitec",
+   "text": "Etsimme ohjelmistokehitysharjoittelijaa tai päättötyön tekijää. Teknologiat: React, TypeScript, .NET, SQL, Git. Hybridityö mahdollista. Hakuaika umpeutuu 31.12.2026."},
+  {"title": "IT Support Trainee", "company": "Esimerkki Oy", "location": "Vaasa", "url": "https://example.com/support",
+   "text": "IT-tukitehtäviä trainee-roolissa Vaasassa. Osa-aikainen mahdollinen. Perustason tietotekniikan osaaminen riittää."},
+  {"title": "Junior Software Developer", "company": "Two Day Finland", "location": "Helsinki", "url": "https://example.com/junior",
+   "text": "Opiskelijalle tai harjoittelijalle. Java, JavaScript, React, Node.js, PostgreSQL. Jatko osa-aikaisena opintojen ohessa. Etätyömahdollisuus."},
+  {"title": "Senior Java-ohjelmistokehittäjä", "company": "Pankki Oy", "location": "Vaasa", "url": "https://example.com/senior",
+   "text": "Vähintään 5 vuo kokemusta Javasta, Spring, SQL. Senior-taso."},
+  {"title": "Levariohjelmoija, Vaasa", "company": "Yes Your Excellent Staff", "location": "Vaasa", "url": "https://example.com/levari",
+   "text": "Laserleikkauksen ohjelmointia."},
+  {"title": "Full Stack Developer trainee", "company": "Vanha Oy", "location": "Espoo", "url": "https://example.com/expired",
+   "text": "TypeScript, Next.js, Supabase. Hakuaika umpeutuu 01.02.2026."},
+  {"title": "Markkinointiharjoittelija", "company": "Task Hire", "location": "Tampere", "url": "https://example.com/mkt",
+   "text": "Sosiaalisen median sisältöjä."}
+]

@@ -1,0 +1,13 @@
+# Semanttinen haku (rag/). Perusjobhunter toimii ilman näitä (SCORING_MODE=keyword).
+# CPU-torch kannattaa asentaa ensin: pip install torch --index-url https://download.pytorch.org/whl/cpu
+numpy>=2.0
+python-dotenv>=1.0
+sqlite-vec>=0.1.6
+sentence-transformers>=3.0
+pytest>=8.0
+# valinnainen: PDF-muotoinen CV
+# pypdf>=4.0
+# Generatiiviset ominaisuudet ja uusi backend
+fastapi>=0.115
+uvicorn>=0.30
+anthropic>=2.0   # vain LLM_PROVIDER=claude

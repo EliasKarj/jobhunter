@@ -1,0 +1,34 @@
+# Käyttäjän oma data: KAIKKI henkilökohtainen on tässä kansiossa (datadir.py, JOBHUNTER_DATA).
+# CV, profiili, osaaminen, hakemukset, CV-arkisto, välimuistit, varmuuskopiot, lokit, evaluointimerkinnät.
+data/
+demo-data/
+.env
+
+# Varmistus: vanhat sijainnit juuressa (ennen datakansiota). Näitä ei pidä enää syntyä.
+*.json.bak
+applications.json
+companies.json
+cvs.json
+drafts.json
+answers.json
+manual_jobs.json
+ops_suggestions.json
+/profile.json
+/skills.json
+results/
+cache/
+backups/
+archive/
+eval/
+*.log
+*.sqlite
+
+# Rakennus ja työkalut
+__pycache__/
+.pytest_cache/
+frontend/node_modules/
+frontend/dist/
+jobhunter.zip
+
+# Vanha versio (ennen FastAPI/React-käyttöliittymää)
+jobhunter/

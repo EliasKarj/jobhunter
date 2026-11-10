@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "Työhaku-avustin",
+  "version": "1.0.0",
+  "description": "Ehdottaa vastauksia hakulomakkeen kysymyksiin kentän vieressä. Ei koskaan lähetä lomaketta.",
+  "action": { "default_title": "Käynnistä Työhaku-avustin tällä sivulla" },
+  "background": { "service_worker": "background.js" },
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1:8765/*"]
+}
