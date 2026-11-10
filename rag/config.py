@@ -20,8 +20,13 @@ def _load_env() -> None:
 
 
 def _path(v: str) -> Path:
+    """Suhteellinen polku on aina datakansion sisällä: "data/cv.md" (vanha muoto .env:ssä) ja "cv.md" -> DATA/cv.md.
+    Muuten demotila ja testit käyttäisivät .env:n kautta oikeaa CV:tä ja hakuindeksiä."""
     p = Path(v)
-    return p if p.is_absolute() else BASE / p
+    if p.is_absolute():
+        return p
+    parts = p.parts[1:] if p.parts and p.parts[0] == "data" else p.parts
+    return DATA.joinpath(*parts)
 
 
 @dataclass(frozen=True)

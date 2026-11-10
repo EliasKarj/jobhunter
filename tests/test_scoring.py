@@ -239,3 +239,11 @@ def test_location_from_posting_places_when_sitemap_gives_none():
     j = jh.Job(title="Junior Python Developer", url="u", location="", text="Python.", detail={"places": ["Vaasa"]})
     r = jh.score_job(j, _prof(), dt.date(2026, 11, 9))
     assert r["area"] == "Vaasa" and r["parts"]["alue"] == 20
+
+
+def test_relative_paths_in_env_resolve_inside_data_dir(monkeypatch):
+    from rag import config
+    monkeypatch.setenv("CV_PATH", "data/cv.md")
+    monkeypatch.setenv("RAG_DB", "rag.sqlite")
+    s = config.load()
+    assert s.cv_path == config.DATA / "cv.md" and s.db_path == config.DATA / "rag.sqlite"
