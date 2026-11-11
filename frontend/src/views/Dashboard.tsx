@@ -284,6 +284,10 @@ export default function Dashboard() {
                         {r.llm && r.llm.level !== "junior" && <span className={"tag" + (r.llm.level === "senior" ? " stamp" : " warn")}>{r.llm.level === "senior" ? "Senior-taso" : "Vaatii kokemusta"}</span>}
                         <DeadlineTag iso={r.deadline} />
                       </span>
+                      <button type="button" className="row-hide" title={st.hidden ? "Palauta listaan (x)" : "Ei kiinnosta: piilota listalta (x)"}
+                              onClick={(e) => { e.stopPropagation(); jobState.mutate({ url: r.job.url, hidden: !st.hidden }); }}
+                              onDoubleClick={(e) => e.stopPropagation()}>
+                        {st.hidden ? "Palauta" : "Piilota"}</button>
                     </div>
                     {r.llm?.reason && <div className="why-line">{r.llm.reason}</div>}
                   </div>

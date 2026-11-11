@@ -167,7 +167,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
   }, [open]);
   const keys: [string, string][] = [
     ["j / k", "seuraava / edellinen ilmoitus"], ["Enter", "avaa valittu"], ["/", "haku"],
-    ["s", "tallenna (kiinnostava)"], ["x", "piilota"], ["1–8", "vaihda seurannan tila"],
+    ["s", "tallenna (kiinnostava)"], ["x", "piilota (ei kiinnosta) / palauta"], ["1–8", "vaihda seurannan tila"],
     ["o", "avaa alkuperäinen ilmoitus"], ["e", "sopivuusselitys (ilmoitussivulla)"], ["h", "räätälöi CV"],
     ["g e / g k / g s", "etusivu / kysy / seuranta"], ["?", "tämä ohje"], ["Esc", "sulje"],
   ];

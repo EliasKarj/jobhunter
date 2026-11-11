@@ -36,7 +36,7 @@ export function useJobState(toast: (m: string) => void) {
   return useMutation({
     mutationFn: (b: { url: string; saved?: boolean; hidden?: boolean }) => post("/api/state", b),
     onSuccess: (_r, b) => {
-      toast(b.hidden ? "Piilotettu" : b.hidden === false ? "Palautettu" : b.saved ? "Tallennettu" : "Tallennus poistettu");
+      toast(b.hidden ? "Piilotettu. Palautus: Näytä piilotetut" : b.hidden === false ? "Palautettu" : b.saved ? "Tallennettu" : "Tallennus poistettu");
       qc.invalidateQueries({ queryKey: ["jobs"] });
     },
     onError: (e: Error) => toast(e.message),

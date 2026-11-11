@@ -155,6 +155,7 @@ export default function JobView() {
     o: () => window.open(url, "_blank", "noopener"),
     h: () => openCv(),
     s: () => jobState.mutate({ url, saved: !job.data?.state.saved }),
+    x: () => jobState.mutate({ url, hidden: !job.data?.state.hidden }),
     ...Object.fromEntries(STATUS_ORDER.map((s, i) => [String(i + 1), () => {
       if (app ? allowed.includes(s) || s === app.status : true) change(s);
       else toast(`Tilasta ${STATUS_LABEL[app!.status]} ei voi siirtyä tilaan ${STATUS_LABEL[s]}`);
@@ -203,6 +204,9 @@ export default function JobView() {
                 title="Saatekirje ja valmiit vastaukset. Lomakkeen kysymyksiin laajennus kirjoittaa vastaukset ilman tätäkin.">Saatekirje</Link>
           <button className="btn ghost" aria-pressed={!!job.data?.state.saved} onClick={() => jobState.mutate({ url, saved: !job.data?.state.saved })}>
             {job.data?.state.saved ? "Tallennettu" : "Tallenna"} <kbd>s</kbd></button>
+          <button className="btn ghost" aria-pressed={!!job.data?.state.hidden} title="Ei kiinnosta: ilmoitus piilotetaan listalta"
+                  onClick={() => jobState.mutate({ url, hidden: !job.data?.state.hidden })}>
+            {job.data?.state.hidden ? "Piilotettu" : "Piilota"} <kbd>x</kbd></button>
         </div>
       </header>
 

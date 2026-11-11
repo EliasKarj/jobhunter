@@ -182,6 +182,13 @@ label.field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); fon
 .job-row .meta { font-size: 13px; color: var(--muted); display: flex; gap: 4px 10px; flex-wrap: wrap; align-items: center; margin-top: 3px; }
 .job-row .meta .co { color: var(--ink-2); }
 .job-row.hidden-job { opacity: 0.5; }
+.job-row .row-hide { margin-left: auto; border: 1px solid var(--line); background: transparent; color: var(--muted);
+  font-size: 12px; padding: 1px 8px; border-radius: 4px; cursor: pointer; }
+.job-row .row-hide:hover, .job-row .row-hide:focus-visible { color: var(--ink); border-color: var(--ink-2); }
+@media (hover: hover) {
+  .job-row .row-hide { opacity: 0; }
+  .job-row:hover .row-hide, .job-row.sel .row-hide, .job-row.hidden-job .row-hide, .job-row .row-hide:focus-visible { opacity: 1; }
+}
 .job-row .sc { text-align: right; font: 13.5px var(--f-mono); color: var(--ink-2); }
 .job-row .sc.na { color: var(--muted); }
 .hyb { justify-self: end; min-width: 40px; text-align: center; font: 500 13.5px var(--f-mono); padding: 2px 0; border-radius: 4px;
