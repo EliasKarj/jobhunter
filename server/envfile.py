@@ -19,6 +19,7 @@ EDITABLE = {
     "OLLAMA_MODEL": lambda v: bool(re.fullmatch(r"[\w.\-:/]{1,80}", v)),
     "CLAUDE_MODEL": lambda v: bool(re.fullmatch(r"claude-[\w.\-]{1,60}", v)),
     "CLAUDE_MODEL_WRITING": lambda v: v == "" or bool(re.fullmatch(r"claude-[\w.\-]{1,60}", v)),
+    "REVIEW_MODEL": lambda v: v == "" or bool(re.fullmatch(r"claude-[\w.\-]{1,60}", v)),
     "ANTHROPIC_API_KEY": lambda v: v == "" or bool(re.fullmatch(r"[\w\-]{20,200}", v)),
     "EMBED_MODEL": lambda v: bool(re.fullmatch(r"[\w.\-/]{1,100}", v)),
     "CHUNK_SIZE": lambda v: v.isdigit() and 100 <= int(v) <= 8000,

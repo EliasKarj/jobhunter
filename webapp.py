@@ -380,6 +380,41 @@ def _apps() -> list[dict]:
     return apps
 
 
+def _job_key(company: str | None, title: str | None) -> str:
+    norm = lambda s: re.sub(r"[^a-z0-9åäö]+", " ", (s or "").lower()).strip()  # noqa: E731
+    return f"{norm(company)}|{norm(title)}"
+
+
+def app_aliases(rows: list[dict], apps: list[dict]) -> dict[str, str]:
+    """Sama ilmoitus uudella osoitteella (Duunitori vaihtaa joskus ilmoituksen tunnuksen): {listan url: hakemuksen url}.
+    Vain kun hakemuksen oma osoite on poistunut listalta ja yritys ja otsikko täsmäävät yksiselitteisesti."""
+    urls = {r["job"]["url"] for r in rows}
+    by_key: dict[str, list[dict]] = {}
+    for a in apps:
+        if a.get("url") and a["url"] not in urls and a.get("company") and a.get("title"):
+            by_key.setdefault(_job_key(a["company"], a["title"]), []).append(a)
+    out: dict[str, str] = {}
+    cand: dict[str, list[str]] = {}
+    for r in rows:
+        k = _job_key(r["job"].get("company"), r["job"].get("title"))
+        if k in by_key and r["job"]["url"] not in {a["url"] for a in apps}:
+            cand.setdefault(k, []).append(r["job"]["url"])
+    for k, row_urls in cand.items():
+        if len(by_key[k]) == 1 and len(row_urls) == 1:     # epäselvä (useita samannimisiä): ei arvata
+            out[row_urls[0]] = by_key[k][0]["url"]
+    return out
+
+
+def app_for(url: str, apps: list[dict] | None = None) -> dict | None:
+    """Hakemus ilmoitukselle: suoraan osoitteella tai uudelleenjulkaistun ilmoituksen kautta (app_aliases)."""
+    apps = _apps() if apps is None else apps
+    a = next((x for x in apps if x.get("url") == url), None)
+    if a:
+        return a
+    alias = app_aliases(_read(LATEST, {}).get("rows", []), apps).get(url)
+    return next((x for x in apps if x.get("url") == alias), None) if alias else None
+
+
 def _save_apps(apps: list[dict]) -> None:
     _write(APPS, {"apps": apps}, indent=1)
 
@@ -1108,13 +1143,14 @@ def api_get(path: str, query: dict[str, list[str]]):
         latest["rows"] = [{**r, "job": {k: v for k, v in r["job"].items() if k != "text"}} for r in latest.get("rows", [])]
         latest["state"] = _read(STATE, {})
         latest["gone"] = _read(GONE, {})
+        latest["app_alias"] = app_aliases(latest["rows"], _apps())   # uudelleenjulkaistu ilmoitus -> hakemus
         return 200, latest
     if path == "/api/job":
         url = (query.get("url") or [""])[0]
         row = next((r for r in _read(LATEST, {}).get("rows", []) if r["job"]["url"] == url), None)
         if not row:
             return 404, {"error": "Ilmoitusta ei löytynyt. Se on voinut poistua tuloksista uuden haun jälkeen."}
-        app = next((a for a in _apps() if a.get("url") == url), None)
+        app = app_for(url)
         return 200, {"row": row, "insights": job_insights(row), "state": _read(STATE, {}).get(url, {}), "app": app,
                      "gone": _read(GONE, {}).get(url)}
     if path == "/api/status":

@@ -35,6 +35,7 @@ export interface JobsPayload {
   rows: Row[];
   state: Record<string, JobState>;
   gone: Record<string, string>;
+  app_alias?: Record<string, string>;   // uudelleenjulkaistu ilmoitus -> hakemuksen alkuperäinen url
 }
 
 export type Status =

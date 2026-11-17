@@ -55,7 +55,8 @@ _FIRST_PERSON = re.compile(
     r"opin|hain|innostun|motivoi|vahvuuteni|osaamiseni|kokemukseni|taustani|projektini|suostun|sitoudun|lupaan|"
     r"i|i'm|i've|i'd|my|me|myself)\b", re.I)
 _NUM = re.compile(r"(?<![\w.])\d+(?:[.,]\d+)?(?![\w])")
-_SENT = re.compile(r"[^.!?\n]+[.!?]?")
+# piste ilman välilyöntiä perässä ei pääty virkettä: päivämäärät (11.1.2027), Node.js, versiot (3.12)
+_SENT = re.compile(r"(?:[^.!?\n]|\.(?=\w))+[.!?]?")
 _TOKEN = re.compile(r"(?<![\w])[A-Za-zÅÄÖåäö.#+][\w#+./-]*[\w#+]|(?<![\w])[A-Z]{2,}(?![\w])")
 SUPPORT_MIN = 0.55   # minä-lauseen ja parhaan profiilipalan kosini (bge-m3), alle = "tarkista"
 
@@ -83,10 +84,19 @@ def sentences(text: str) -> list[tuple[int, int, str]]:
     return out
 
 
+_FI_ENDINGS = sorted(["iksi", "ista", "istä", "issa", "issä", "illa", "illä", "ille", "ilta", "iltä", "iin", "ina", "inä",
+                      "ia", "iä", "lla", "llä", "ssa", "ssä", "sta", "stä", "lle", "lta", "ltä", "ksi", "in", "n", "a", "ä"],
+                     key=len, reverse=True)
+# sanan perään sallittu taivutus: sijapääte (myös kaksinkertainen vokaali "javaa", "sql:ää") ja liitepartikkeli
+_FI_TAIL = r"(?:(?:" + "|".join(_FI_ENDINGS + ["aa", "ää", "ee", "ii", "oo", "uu", "yy", "seen", "hin", "en", "on", "un",
+                                             "an", "ja", "jä", "ta", "tä", "t", "s", "es"]) + r")(?:kin|kaan|kään)?)?"
+
+
 def _has(term: str, text_low: str) -> bool:
     t = term.lower()
     if re.fullmatch(r"[\w ]+", t):
-        return re.search(rf"(?<![\w]){re.escape(t)}", text_low) is not None   # taivutus: python -> pythonia ok
+        # taivutus sallitaan (python -> pythonia, linuxissakin), mutta ei pidempää sanaa: java ei osu javascriptiin
+        return re.search(rf"(?<![\w]){re.escape(t)}{_FI_TAIL}(?![a-zåäö])", text_low) is not None
     return t in text_low
 
 
@@ -95,7 +105,8 @@ _M365 = ("microsoft 365", "m365", "office 365")
 _IMPLIED = {"frontend": ("fullstack",), "backend": ("fullstack",),
             # CV:ssä "Microsoft 365" yhtenä kokonaisuutena: sen sovellusten maininta ei ole keksitty taito
             **{k: _M365 for k in ("excel", "word", "powerpoint", "teams", "microsoftteams", "outlook", "onedrive",
-                                  "sharepoint", "msexcel", "msword", "microsoftexcel", "microsoftword")}}
+                                  "sharepoint", "msexcel", "msword", "microsoftexcel", "microsoftword")},
+            "amk": ("ammattikorkeakoulu", "university of applied sciences")}   # tutkinnon lyhenne
 
 
 def _spellings(term: str) -> set[str]:
@@ -119,8 +130,17 @@ def _present(term: str, text_low: str) -> bool:
         if key in {f.replace(" ", "").replace("-", "") for f in forms}:
             if any(_has(g, text_low) for x in implied_by for g in _spellings(x if x != "fullstack" else "full-stack")):
                 return True
-    m = re.fullmatch(r"(.*?[A-Z0-9#+.][A-Za-z0-9#+.]*?)([a-zåäö]{1,4})", term)
-    return bool(m) and len(m.group(1)) >= 2 and _has(m.group(1), text_low)
+    # taivutettu tekniikan nimi ("Pythonia", "DevOpsin", "Gitillä"): vain oikeat sijapäätteet pois, ja vartalon pitää
+    # olla tarpeeksi pitkä. Aiemmin "Python" lyheni muotoon "Py" ja osui sanaan "tukipyyntö", "Java" muotoon "Jav".
+    base = re.sub(r"(?:kin|kaan|kään)$", "", term) or term     # liitepartikkeli: "Linuxissakin"
+    if base != term and _has(base, text_low):
+        return True
+    for end in _FI_ENDINGS:
+        stem = base[: -len(end)]
+        if base.endswith(end) and len(stem) >= (4 if len(end) == 1 else 3) and re.search(r"[A-Z0-9#+.]", stem):
+            if _has(stem, text_low):
+                return True
+    return False
 
 
 def tech_terms(sentence: str) -> list[str]:

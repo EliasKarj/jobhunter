@@ -162,3 +162,23 @@ def test_resume_index_reports_failure_and_releases_lock(tmp_path, monkeypatch):
     monkeypatch.setattr(webapp, "update_semantic_index", boom)
     webapp.resume_index()
     assert webapp.status["running"] is False and "malli puuttuu" in webapp.status["error"]
+
+
+def _row(url, company, title):
+    return {"job": {"url": url, "company": company, "title": title}}
+
+
+def test_reposted_job_is_linked_to_existing_application():
+    apps = [{"url": "https://d/old-1", "company": "Syöpäjärjestöt", "title": "Junior Full Stack Developer"},
+            {"url": "https://d/a", "company": "Firma", "title": "Harjoittelija"}]
+    rows = [_row("https://d/new-2", "Syöpäjärjestöt", "Junior Full Stack Developer"),
+            _row("https://d/a", "Firma", "Harjoittelija")]
+    assert webapp.app_aliases(rows, apps) == {"https://d/new-2": "https://d/old-1"}
+
+
+def test_no_alias_when_original_still_listed_or_ambiguous():
+    apps = [{"url": "https://d/1", "company": "Poliisi", "title": "Korkeakouluharjoittelija"}]
+    still = [_row("https://d/1", "Poliisi", "Korkeakouluharjoittelija"), _row("https://d/2", "Poliisi", "Korkeakouluharjoittelija")]
+    assert webapp.app_aliases(still, apps) == {}           # alkuperäinen yhä listalla: kaksi eri paikkaa
+    two = [_row("https://d/2", "Poliisi", "Korkeakouluharjoittelija"), _row("https://d/3", "Poliisi", "Korkeakouluharjoittelija")]
+    assert webapp.app_aliases(two, apps) == {}             # kaksi ehdokasta: ei arvata

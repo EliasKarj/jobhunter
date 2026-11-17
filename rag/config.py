@@ -55,6 +55,7 @@ class Settings:
     anthropic_api_key: str = ""
     claude_model: str = "claude-haiku-5-5"
     claude_model_writing: str = ""        # tyhjä = sama kuin claude_model
+    review_model: str = "claude-opus-5-5" # hakemuksen lopputarkistus (harvoin, noin 0,08 $/ajo); tyhjä = kirjoitusmalli
     score_provider: str = "off"           # kärjen sopivuusarvio: off | ollama | claude (oma valinta: CV ei lähde pilveen)
     score_top: int = 500
     score_workers: int = 6
@@ -131,6 +132,7 @@ def load() -> Settings:
         anthropic_api_key=e("ANTHROPIC_API_KEY", "").strip(),
         claude_model=e("CLAUDE_MODEL", "claude-haiku-5-5").strip(),
         claude_model_writing=e("CLAUDE_MODEL_WRITING", "").strip(),
+        review_model=e("REVIEW_MODEL", "claude-opus-5-5").strip(),
         score_provider=e("SCORE_PROVIDER", "off").strip().lower(),
         score_top=int(e("SCORE_TOP", "500")),
         score_workers=int(e("SCORE_WORKERS", "6")),

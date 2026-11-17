@@ -224,7 +224,7 @@ def _ensure_app(url: str) -> None:
     Samalla ilmoitus tulee selainlaajennuksen hakemuslistaan (lista = paketit + seuranta)."""
     with webapp.app_lock:
         apps = webapp._apps()
-        a = next((x for x in apps if x.get("url") == url), None)
+        a = webapp.app_for(url, apps)   # myös uudelleenjulkaistu ilmoitus: ei toista hakemusta seurantaan
         if a is None:
             a = webapp.app_from_job(url)
             if not a:
@@ -295,7 +295,8 @@ async def answers_save(request: Request):
 # ------------------------------------------------------------ selainlaajennus
 
 def _ext_ok(request: Request) -> bool:
-    return secrets.compare_digest(request.headers.get("x-jobhunter-key", ""), assist.extension_key())
+    # tavuina: compare_digest kaatuu ei-ASCII-merkkijonoon (väärä avain antoi 500, ei 401)
+    return secrets.compare_digest(request.headers.get("x-jobhunter-key", "").encode(), assist.extension_key().encode())
 
 
 @app.get("/api/assist/key")
@@ -343,6 +344,21 @@ async def assist_generate(request: Request):
     written = [{"question": str(w.get("question") or "")[:300], "answer": str(w.get("answer") or "")[:3000]}
                for w in (body.get("written") or []) if isinstance(w, dict) and str(w.get("answer") or "").strip()][:8]
     return await run_in_threadpool(_guard, lambda: answer_url(url, question, config.load(), others, written))
+
+
+@app.post("/api/assist/review")
+async def assist_review(request: Request):
+    """Lopputarkistus: laajennus lähettää lomakkeen kentät arvoineen vasta, kun käyttäjä painaa Tarkista hakemus."""
+    if not _ext_ok(request):
+        return _err(401, "Väärä laajennusavain", "key")
+    body = await request.json()
+    url = str(body.get("url") or "")
+    if not url:
+        return _err(400, "Valitse ensin hakemus palkin valikosta", "bad_request")
+    fields = body.get("fields") if isinstance(body.get("fields"), list) else []
+    from rag.review import review
+    from starlette.concurrency import run_in_threadpool
+    return await run_in_threadpool(_guard, lambda: review(url, fields, config.load()))
 
 
 # ------------------------------------------------------------ räätälöity CV

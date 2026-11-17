@@ -21,7 +21,7 @@ täyttämään hakemukset, mutta ei keksi mitään eikä lähetä mitään puole
 - **Pisteytys:** avainsanat, semanttinen vastaavuus CV:hen ja kielimallin sopivuusarvio. Alue, taso ja etätyö painotetaan profiilin mukaan.
 - **Räätälöity CV:** valitsee ja järjestää CV:si kohdat ilmoitukseen ja sovittaa yhdelle sivulle. Arviointipaneelissa viisi arvioijaa, joista faktantarkistajalla on veto-oikeus ja AI-seuloja simuloi rekrytointijärjestelmän esikarsintaa. Jokainen versio arkistoidaan PDF:nä.
 - **Hakemukset:** vastaukset portaalien kysymyksiin ja saatekirje omalla kirjoitustyylilläsi, joka opitaan muokkauksistasi. Ilmoituksen omat hakuohjeet (esim. "kerro yhdestä projektista") noudatetaan.
-- **Selainlaajennus:** ehdotus jokaisen lomakekentän viereen. Lomakkeen kysymykset jaetaan niin, ettei sama projekti toistu joka kentässä.
+- **Selainlaajennus:** ehdotus jokaisen lomakekentän viereen. Lomakkeen kysymykset jaetaan niin, ettei sama projekti toistu joka kentässä. **Tarkista hakemus** käy valmiin lomakkeen läpi ennen lähettämistä: tyhjät pakolliset kentät, kielivirheet, väitteet CV:tä vasten ja ilmoituksen painotukset, joita hakemus ei vielä käytä.
 - **Seuranta:** hakemusten tilat, muistutukset ja vertailu siitä, millä CV:llä on saatu vastauksia.
 - **Projektiskanneri:** löytää omista git-repoistasi projekteja, joita CV:ssä ei vielä ole, ja ehdottaa niitä hyväksyttäväksi.
 
@@ -109,7 +109,7 @@ Kuvat on otettu demotilassa keksityllä esimerkkihenkilöllä.
 ## Testit ja evaluointi
 
 ```powershell
-python -m pytest -q          # 213 testiä, eivät tee API-kutsuja eivätkä käytä omaa dataa
+python -m pytest -q          # 226 testiä, eivät tee API-kutsuja eivätkä käytä omaa dataa
 ```
 
 Rankingia on mitattu 89 käsin merkityllä ilmoituksella. Kärjen osuvuus (NDCG@10) oli avainsanoilla 0,66, hybridillä

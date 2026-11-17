@@ -381,3 +381,13 @@ def test_application_instructions_not_forced_on_unrelated_questions():
     fake = llm.FakeLLM([{"answer": "Python ja SQL."}])
     package.answer_question(g, fake, "Mitä ohjelmointikieliä hallitset?", "fi", "Aino", cv_full="")
     assert "HAKUOHJEET" not in fake.calls[0]["system"]
+
+
+def test_inflection_does_not_match_other_words():
+    from rag.verify import _present
+    cv = "python, devops, git, java, linux"
+    for t in ("Pythonia", "DevOpsin", "Gitillä", "Javalla", "Linuxissakin"):
+        assert _present(t, cv), t
+    assert not _present("Python", "palvelu- ja tukipyyntöjen käsittely")   # ennen: "Py" osui sanaan tukipyyntö
+    assert not _present("Java", "javascript, typescript")                   # Java ei ole JavaScript
+    assert not _present("Docker", "dokumentointi")

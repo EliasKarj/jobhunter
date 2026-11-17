@@ -242,10 +242,14 @@ class FakeLLM:
 
 
 def get_llm(s: Settings, task: str = "chat") -> LLM:
-    """task: chat | explain | writing. writing käyttää CLAUDE_MODEL_WRITING:iä, jos se on asetettu."""
+    """task: chat | explain | writing | review. writing käyttää CLAUDE_MODEL_WRITING:iä, review REVIEW_MODEL:ia
+    (lopputarkistus, oletus Opus), jos ne on asetettu."""
     if s.llm_provider == "ollama":
         return OllamaLLM(s.ollama_model, s.ollama_url)
     if s.llm_provider == "claude":
+        if task == "review":
+            model = s.review_model or s.claude_model_writing or s.claude_model
+            return ClaudeLLM(model, s.anthropic_api_key, effort="medium")
         model = (s.claude_model_writing if task == "writing" else "") or s.claude_model
         return ClaudeLLM(model, s.anthropic_api_key, effort="medium" if task == "writing" else "low")
     if s.llm_provider == "fake":

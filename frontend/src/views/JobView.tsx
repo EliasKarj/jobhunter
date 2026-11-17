@@ -137,9 +137,11 @@ export default function JobView() {
   const r = job.data?.row;
   useTitle(r?.job.title || "Ilmoitus");
 
-  const app = (apps.data?.apps || []).find((a) => a.url === url) || null;
+  // palvelin löytää hakemuksen myös uudelleenjulkaistulle ilmoitukselle (eri osoite, sama yritys ja otsikko)
+  const appUrl = job.data?.app?.url || url;
+  const app = (apps.data?.apps || []).find((a) => a.url === appUrl) || null;
   const allowed: Status[] = app ? (tracking.data?.transitions[app.status] || []) : ["interested", "drafting", "applied"];
-  const change = (s: Status) => setStatus.mutate({ url, status: s, apps: apps.data?.apps || [] });
+  const change = (s: Status) => setStatus.mutate({ url: appUrl, status: s, apps: apps.data?.apps || [] });
   // Alkuperäinen ilmoitus uuteen välilehteen (lomakkeen täyttöä varten) ja CV-sivu tähän: CV tehdään sillä välin
   const openCv = () => {
     if (r?.job.source !== "manual" || /^https?:/.test(url)) window.open(url, "_blank", "noopener");

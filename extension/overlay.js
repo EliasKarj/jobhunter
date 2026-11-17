@@ -1,5 +1,6 @@
 // Leijuva palkki hakulomakkeen kentän vieressä: näyttää ehdotetun vastauksen, josta sen voi lukea ja kopioida.
-// Lukee vain kentän otsikon, ei kenttään kirjoitettua tekstiä. Ei koskaan lähetä lomaketta.
+// Ehdotuksia varten lukee vain kentän otsikon. Kenttien arvot luetaan vain, kun käyttäjä painaa "Tarkista hakemus"
+// (lopputarkistus). Ei koskaan lähetä lomaketta.
 (() => {
   if (window.__tyohakuAvustin) return window.__tyohakuAvustin();   // kuvaketta painettiin uudelleen: näytä palkki
 
@@ -65,6 +66,16 @@
     .row { display: flex; gap: 6px; flex-wrap: wrap; }
     .hint { color: #9aa1ad; font-size: 12.5px; }
     [hidden] { display: none !important; }
+    .bar.wide { width: 400px; max-height: 80vh; }
+    .rev { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+    .rev h3 { margin: 4px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #9aa1ad; }
+    .rev h3.bad { color: #fca5a5; } .rev h3.warn { color: #fcd34d; } .rev h3.ok { color: #6ee7b7; }
+    .item { background: #171a20; border-radius: 6px; padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+    .item .f { font-size: 11.5px; color: #9aa1ad; cursor: pointer; text-decoration: underline dotted; }
+    .item .fix { white-space: pre-wrap; color: #6ee7b7; }
+    .item del { color: #fca5a5; }
+    .item button { align-self: flex-start; padding: 2px 8px; font-size: 12px; }
+    .verdict { font-weight: 600; }
   </style>
   <div class="bar" role="dialog" aria-label="Työhaku-avustin">
     <div class="top"><span class="brand"><i></i>Työhaku</span><span class="q" id="prog"></span><button class="x" id="close" aria-label="Piilota palkki">×</button></div>
@@ -76,12 +87,15 @@
       <div class="text" id="text" tabindex="0" hidden></div>
       <div class="bad" id="bad" hidden></div>
       <div class="warn" id="warn" hidden></div>
+      <div class="rev" id="rev" hidden></div>
       <div class="row" id="keyrow" hidden><input id="key" placeholder="Liitä avain: Jobhunter → Asetukset" aria-label="Laajennusavain"><button id="savekey">Tallenna</button></div>
       <div class="row">
         <button class="primary" id="copy" hidden>Kopioi</button>
         <button id="insert" hidden>Lisää kenttään</button>
         <button id="gen" hidden>Kirjoita ehdotus</button>
       </div>
+      <div class="row"><button id="review" title="Lukee lomakkeen kentät ja tarkistaa kielen, puuttuvat kohdat ja väitteet CV:tä vasten. Ei lähetä mitään.">Tarkista hakemus</button>
+        <button id="revclose" hidden>Takaisin ehdotuksiin</button></div>
     </div>
   </div>`;
   document.documentElement.appendChild(host);
@@ -90,6 +104,29 @@
   const say = (id, text) => { $(id).textContent = text || ""; show(id, !!text); };
 
   let field = null, question = "", answer = "", job = "", muted = false, moved = false, seq = 0;
+
+  // Hakulomake on usein dialogi tai peittokerros (Teamtailor, <dialog>): portaali sulkee sen, kun klikataan sen
+  // ulkopuolelle (window-tason capture-kuuntelija, ehtii ennen meitä), ja fokusloukku vetää fokuksen takaisin.
+  // Siksi palkki siirretään avoimen dialogin sisään: klikkaukset ja fokus palkissa ovat silloin "lomakkeen sisällä".
+  const DIALOG = 'dialog[open], [aria-modal="true"], [role="dialog"]';
+  function adopt(el) {
+    // ilman kenttää: vain näkyvä dialogi, jossa on tekstikenttiä (ei evästebanneria tms.)
+    const box = (el && el.closest?.(DIALOG)) || [...document.querySelectorAll(DIALOG)]
+      .find((d) => visible(d) && d.querySelector('textarea, input[type="text"], input:not([type])')) || null;
+    const parent = box || document.documentElement;
+    if (host.parentNode !== parent) parent.appendChild(host);
+  }
+
+  // position: fixed muuttuu suhteelliseksi, jos dialogilla on transform: korjataan mitatulla erotuksella
+  function setPos(left, top) {
+    host.style.left = `${left}px`;
+    host.style.top = `${top}px`;
+    const r = host.getBoundingClientRect();
+    if (Math.abs(r.left - left) > 1 || Math.abs(r.top - top) > 1) {
+      host.style.left = `${left + (left - r.left)}px`;
+      host.style.top = `${top + (top - r.top)}px`;
+    }
+  }
 
   function place() {
     if (!field || moved) return;
@@ -100,8 +137,7 @@
     let top = r.top;
     if (left < 8) { left = Math.max(8, Math.min(r.left, vw - w - 8)); top = r.bottom + gap; }   // ei sivuillakaan: alle
     const h = host.offsetHeight || 260;
-    host.style.left = `${left}px`;
-    host.style.top = `${Math.max(8, Math.min(top, vh - h - 8))}px`;
+    setPos(left, Math.max(8, Math.min(top, vh - h - 8)));
   }
 
   function render(res) {
@@ -217,6 +253,7 @@
     const my = ++seq;
     field = el; question = questionFor(el);
     if (muted) return;
+    adopt(el);
     host.style.display = "block";
     say("q", question || "Kysymystä ei tunnistettu");
     if (!cache.has(question)) render({ suggestions: [], hint: "Haetaan…" });
@@ -237,6 +274,122 @@
     sel.value = job;
   }
 
+  // ---------------------------------------------------------- lopputarkistus
+  // Kun hakija uskoo hakemuksen valmiiksi: kenttien arvot luetaan vasta tästä painikkeesta ja lähetetään omalle
+  // koneelle (Jobhunter), joka tarkistaa säännöt, kielen ja väitteet. Mitään ei täytetä eikä lähetetä portaaliin.
+
+  let formEls = [];
+  const rawLabel = (e) => (e.labels?.[0]?.innerText || e.closest("label")?.innerText || e.getAttribute("aria-label") || "");
+
+  function errorText(e) {
+    const ids = `${e.getAttribute("aria-errormessage") || ""} ${e.getAttribute("aria-describedby") || ""}`.split(/\s+/).filter(Boolean);
+    const byId = ids.map((id) => document.getElementById(id)?.innerText || "")
+      .find((t) => /virhe|error|invalid|virheelli|pakollinen|required|muoto/i.test(t));
+    if (byId) return clean(byId);
+    let node = e.parentElement;
+    for (let d = 0; node && d < 3; d++, node = node.parentElement) {
+      const a = node.querySelector('[role="alert"], [aria-live="assertive"], .error, .invalid-feedback, .field-error');
+      if (a && a.innerText.trim() && !a.contains(e)) return clean(a.innerText).slice(0, 200);
+    }
+    return "";
+  }
+
+  function collectForm() {
+    formEls = [];
+    const out = [], radios = new Map();
+    const els = [...document.querySelectorAll('input, textarea, select, [contenteditable="true"]')]
+      .filter((e) => !e.closest("[data-tyohaku]") && visible(e));
+    for (const e of els) {
+      const type = e.tagName === "SELECT" ? "select" : e.tagName === "TEXTAREA" || e.isContentEditable ? "textarea" : (e.type || "text").toLowerCase();
+      if (["password", "hidden", "file", "submit", "button", "reset", "image"].includes(type)) continue;
+      if (type === "radio") {   // ryhmä yhdeksi kentäksi: valittu vaihtoehto
+        const g = radios.get(e.name) || { el: e };
+        if (e.checked) g.value = clean(rawLabel(e)) || e.value;
+        radios.set(e.name, g);
+        continue;
+      }
+      const value = type === "select" ? (e.selectedOptions?.[0]?.text || "")
+        : e.isContentEditable ? e.innerText : (type === "checkbox" ? "" : e.value || "");
+      const req = e.required || e.getAttribute("aria-required") === "true" || /\*\s*$/.test(rawLabel(e).trim());
+      const v = e.validity;
+      formEls.push(e);
+      out.push({ i: formEls.length - 1, label: questionFor(e) || "(nimetön kenttä)", type, value: (value || "").slice(0, 6000),
+        checked: !!e.checked, required: !!req, error: errorText(e),
+        invalid: e.getAttribute("aria-invalid") === "true" || !!(v && (v.typeMismatch || v.patternMismatch || v.tooLong || v.badInput)),
+        maxlength: e.maxLength > 0 && e.maxLength < 100000 ? String(e.maxLength) : "" });
+    }
+    for (const g of radios.values()) {
+      formEls.push(g.el);
+      const fs = g.el.closest("fieldset");
+      const label = clean(fs?.querySelector("legend")?.innerText) || questionFor(g.el);
+      out.push({ i: formEls.length - 1, label: label || "(valinta)", type: "radio", value: g.value || "",
+        required: g.el.required || g.el.getAttribute("aria-required") === "true", checked: !!g.value, invalid: false, error: "", maxlength: "" });
+    }
+    return out;
+  }
+
+  const mk = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  async function copyText(t, btn) {
+    try { await navigator.clipboard.writeText(t); } catch { /* ei leikepöytää: teksti on näkyvissä */ }
+    btn.textContent = "Kopioitu";
+    setTimeout(() => { btn.textContent = "Kopioi"; }, 1400);
+  }
+
+  function renderReview(res) {
+    const box = $("rev");
+    box.textContent = "";
+    if (res.error) { box.append(mk("div", "bad", res.error)); return; }
+    const n = res.must_fix.length;
+    box.append(mk("div", "verdict " + (n ? "bad" : "src"),
+      n ? `Korjattavaa ennen lähettämistä: ${n}` : "Ei pakollisia korjauksia. Käy vielä alla olevat läpi ennen lähettämistä."));
+    if (res.summary) box.append(mk("div", "hint", res.summary));
+    const groups = [["must_fix", "Korjaa ennen lähettämistä", "bad"], ["improve", "Parannusehdotukset", "ok"], ["check", "Tarkista itse", "warn"]];
+    for (const [key, title, cls] of groups) {
+      if (!res[key]?.length) continue;
+      box.append(mk("h3", cls, title));
+      for (const it of res[key]) {
+        const card = mk("div", "item");
+        const f = mk("span", "f", it.field || "Lomake");
+        const target = it.i >= 0 ? formEls[it.i] : null;
+        if (target) f.addEventListener("click", () => { target.scrollIntoView({ block: "center" }); target.focus(); });
+        card.append(f, mk("div", "", it.issue));
+        const t = it.text || it.fix;
+        if (it.quote && it.fix) {
+          const d = mk("div", "fix");
+          d.append(mk("del", "", it.quote), document.createTextNode(" → " + it.fix));
+          card.append(d);
+        } else if (t) {
+          card.append(mk("div", "fix", t));
+        }
+        if (t) { const b = mk("button", "", "Kopioi"); b.addEventListener("click", () => copyText(t, b)); card.append(b); }
+        box.append(card);
+      }
+    }
+    if (res.dropped) box.append(mk("div", "hint", `${res.dropped} mallin huomiota jätettiin pois (lainattua kohtaa ei löytynyt lomakkeelta tai huomio koski palkkatoivetta).`));
+  }
+
+  function reviewMode(on) {
+    root.querySelector(".bar").classList.toggle("wide", on);
+    if (on) for (const id of ["text", "src", "bad", "warn", "q"]) show(id, false);
+    show("copy", false); show("insert", false); show("gen", false);
+    show("rev", on); show("revclose", on); show("review", !on);
+    if (!on && field) ask(field);
+  }
+
+  async function runReview() {
+    if (!job) return say("hint", "Valitse ensin hakemus ylhäältä.");
+    const fields = collectForm();
+    reviewMode(true);
+    moved = true;
+    adopt(field);
+    setPos(Math.max(8, innerWidth - 416), 16);
+    $("rev").textContent = "";
+    say("hint", `Tarkistetaan ${fields.length} kenttää… (20–60 s)`);
+    const res = await send("review", { url: job, fields });
+    say("hint", "");
+    renderReview(res);
+  }
+
   // ---------------------------------------------------------- toiminnot
 
   $("job").addEventListener("change", (e) => {
@@ -246,6 +399,8 @@
     if (field) ask(field);
   });
   $("close").addEventListener("click", () => { muted = true; host.style.display = "none"; });
+  $("review").addEventListener("click", runReview);
+  $("revclose").addEventListener("click", () => { moved = false; reviewMode(false); });
   $("savekey").addEventListener("click", async () => {
     await chrome.runtime.sendMessage({ type: "setKey", key: $("key").value.trim() });
     await loadJobs();
@@ -302,7 +457,7 @@
   root.querySelector(".top").addEventListener("pointerdown", (e) => {
     if (e.target.closest("button")) return;
     const r = host.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
-    const move = (m) => { moved = true; host.style.left = `${m.clientX - dx}px`; host.style.top = `${m.clientY - dy}px`; };
+    const move = (m) => { moved = true; setPos(m.clientX - dx, m.clientY - dy); };
     const up = () => { removeEventListener("pointermove", move); removeEventListener("pointerup", up); };
     addEventListener("pointermove", move);
     addEventListener("pointerup", up);
@@ -324,10 +479,10 @@
   function showIdle() {
     if (window !== window.top) return;     // upotetuissa kehyksissä palkki tulee vasta kenttää klikattaessa
     muted = false;
-    host.style.display = "block";
     if (field) return ask(field);
-    host.style.left = `${Math.max(8, innerWidth - 356)}px`;
-    host.style.top = "16px";
+    adopt(document.activeElement);        // lomake on jo auki dialogissa: palkki sen sisään heti
+    host.style.display = "block";
+    setPos(Math.max(8, innerWidth - 356), 16);
     say("q", "");
   }
   window.__tyohakuAvustin = showIdle;

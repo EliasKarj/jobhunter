@@ -100,7 +100,12 @@ export default function Dashboard() {
   useEffect(() => { try { localStorage.setItem("filters", JSON.stringify(f)); } catch { /* ei tallennusta */ } }, [f]);
   useEffect(() => { setShown(PAGE); setSel(0); }, [f]);
 
-  const appByUrl = useMemo(() => new Map((apps.data?.apps || []).map((a) => [a.url, a] as [string, App])), [apps.data]);
+  const appByUrl = useMemo(() => {
+    const m = new Map((apps.data?.apps || []).map((a) => [a.url, a] as [string, App]));
+    // sama ilmoitus uudella osoitteella (Duunitori vaihtoi tunnuksen): näytetään haettuna
+    for (const [row, appUrl] of Object.entries(jobs.data?.app_alias || {})) { const a = m.get(appUrl); if (a) m.set(row, a); }
+    return m;
+  }, [apps.data, jobs.data]);
   const rows = jobs.data?.rows || [];
   const state = jobs.data?.state || {};
 
