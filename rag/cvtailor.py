@@ -137,7 +137,10 @@ Palauta:
   Käytä VAIN CV:ssä olevia tietoja. Älä lisää taitoja, työkaluja, vuosia tai lukuja, joita CV:ssä ei ole.
   Kirjoita samalla äänellä kuin CV:n oma profiiliosio: se on hakijan itse kirjoittama. Aloita siitä, kuka hakija on
   ja mitä hän tekee (esim. "IT engineering student who..."), ja nosta 1-2 tähän paikkaan liittyvää konkreettista asiaa.
-  Älä käytä sanaa hakija tai candidate. Kirjoita kokonaisia, kieliopillisesti oikeita virkkeitä."""
+  Älä käytä sanaa hakija tai candidate. Kirjoita kokonaisia, kieliopillisesti oikeita virkkeitä.
+  Luonteenpiirteet ja se, mitä tausta on hakijalle antanut, VAIN CV:n omin sanoin: jos CV sanoo "on antanut
+  luotettavuutta ja paineensietokykyä", käytä juuri niitä piirteitä. Älä lisää uusia (tarkkuus, vastuullisuus,
+  ongelmanratkaisukyky) äläkä muuta väitettä toiseksi ("on opettanut", "has taught me")."""
 
 PLAN_EXAMPLE_FI = "Tietotekniikan insinööriopiskelija, joka..."
 
@@ -212,11 +215,35 @@ def check_summary(summary: str, cv: CV, embed=None, vectors=None) -> list[dict]:
     out = [{"text": c.text, "reasons": c.reasons} for c in claims if c.status == "flag"]
     # luonteenpiirteet, johtaminen, tulokset, laajuus ja johtopäätökset vain, jos CV itse sanoo ne
     words = unsupported_claims(text, full_text(cv))
-    reasons = [f"väite, jota CV:ssä ei ole: \"{w}\"" for w in words]
+    # sama sana tulee myös check():n lauseittaisesta tarkistuksesta: näytetään kerran
+    seen = {w.lower() for c in out for r in c["reasons"] for w in re.findall(r'"([^"]+)"', r)}
+    reasons = [f"väite, jota CV:ssä ei ole: \"{w}\"" for w in words if w.lower() not in seen]
     reasons += [f"kuulostaa tekoälyn tekstiltä: \"{w}\"" for w in cliches(text, full_text(cv))]
     if reasons:
         out.append({"text": text, "reasons": reasons})
     return out
+
+
+FIX_SUMMARY = {
+    "fi": "Korjaat CV:n profiilitekstin. Tarkistus löysi siitä väitteitä, joita CV:ssä ei ole. Poista ne tai korvaa ne "
+          "CV:n omilla sanamuodoilla. Älä lisää mitään uutta. Pidä minä-muoto ilman minä-sanaa. Palauta vain korjattu teksti.",
+    "en": "You fix a CV profile text. A check found claims that are not in the CV. Remove them or replace them with the "
+          "CV's own wording. Add nothing new. Return only the fixed text.",
+}
+
+
+def fix_summary(text: str, flags: list[dict], cv: CV, llm: LLM, lang: str) -> str:
+    """Yksi korjauskierros hylätylle profiilitekstille (palaute: löydetyt väitteet). Palauttaa korjatun tai alkuperäisen."""
+    reasons = list(dict.fromkeys(r for f in flags for r in f["reasons"]))
+    prof = original_summary(cv)
+    user = f"CV:N OMA PROFIILI:\n{prof}\n\nTEKSTI:\n{text}\n\nLÖYDETYT ONGELMAT:\n" + "\n".join(f"- {r}" for r in reasons)
+    try:
+        raw = llm.complete_json(FIX_SUMMARY[lang] + "\n\n" + STYLE[lang], [{"role": "user", "content": user}],
+                                {"type": "object", "additionalProperties": False, "required": ["summary"],
+                                 "properties": {"summary": {"type": "string"}}}, max_tokens=1000)
+        return str(raw.get("summary") or "").strip() or text
+    except Exception:  # noqa: BLE001  (korjausyritys ei saa kaataa räätälöintiä)
+        return text
 
 
 # ------------------------------------------------------------ yhden sivun sovitus
@@ -548,6 +575,11 @@ def tailor(cv_md: str, job: dict, ad_text: str, llm: LLM, lang: str = "en", tran
                              [{"role": "user", "content": user}], PLAN_SCHEMA, max_tokens=6000)
     polished, style_left = polish({"summary": str(plan.get("summary") or "").strip()}, llm, slang)
     gen = polished["summary"]
+    if gen:   # lähteetön väite: yksi korjauskierros palautteen kanssa ennen kuin palataan alkuperäiseen profiiliin
+        check_cv = CV(base.name, base.header + en.header, base.sections + en.sections) if base is not en else base
+        flags = check_summary(gen, check_cv, embed)
+        if flags:
+            gen = fix_summary(gen, flags, base, llm, slang)
     third = third_person_fi(gen) if slang == "fi" else []
     sections, changes, summary, skills, _ = assemble(base, en, plan, None if third else gen, ad_text, lang, embed,
                                                      style=style_left.get("summary", []))

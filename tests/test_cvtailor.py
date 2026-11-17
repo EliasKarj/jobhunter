@@ -176,3 +176,21 @@ def test_third_person_finnish_summary_falls_back_to_original():
     res = cvtailor.tailor(CV_MD, JOB, "", llm.FakeLLM([plan, fix]), lang="fi", fi_md=fi_md)
     assert res["summary"]["source"] == "original" and res["summary"]["text"].startswith("Kolmannen vuoden opiskelija, rakennan")
     assert "kolmas persoona" in res["summary"]["flags"][0]["reasons"][0]
+
+
+def test_rejected_summary_gets_one_fix_round_with_feedback():
+    bad = "Third-year IT student. Warehouse work has taught me precision and responsibility."
+    fixed = "Third-year IT student with DevOps skills (Docker, Linux) and full-stack development."
+    plan = {"section_order": [], "drop": [], "focus_skills": [], "summary": bad}
+    fake = llm.FakeLLM([plan, {"summary": fixed}])
+    res = cvtailor.tailor(CV_MD, JOB, "", fake)
+    assert res["summary"]["source"] == "generated" and res["summary"]["text"] == fixed
+    fix_call = fake.calls[1]["messages"][0]["content"]
+    assert "taught me" in fix_call and "CV:N OMA PROFIILI" in fix_call
+
+
+def test_summary_reasons_not_duplicated():
+    cv = cvtailor.parse(CV_MD)
+    flags = cvtailor.check_summary("Third-year IT student. Warehouse work has taught me precision.", cv)
+    reasons = [r for f in flags for r in f["reasons"] if "taught me" in r]
+    assert len(reasons) == 1
