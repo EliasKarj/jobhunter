@@ -288,6 +288,159 @@ def _relevance(texts: list[str], ad_text: str, skills: list[str], embed=None) ->
     return [b + 0.03 * sum(_present(k, x.lower()) for k in skills) for b, x in zip(base, texts)]
 
 
+# ------------------------------------------------------------ osaamisrivit ilmoitukseen
+
+_LABEL = re.compile(r"^(\*\*[^*]+\*\*\s*)")
+
+
+def _split_top(text: str, sep: str) -> list[str]:
+    """Jaa erottimesta, mutta ei sulkujen sisältä."""
+    out, depth, cur = [], 0, ""
+    for ch in text:
+        depth += ch == "("
+        depth -= ch == ")"
+        if ch == sep and depth == 0:
+            out.append(cur)
+            cur = ""
+        else:
+            cur += ch
+    return out + [cur]
+
+
+def parse_skill_row(text: str) -> tuple[str, list[tuple[str, list[tuple[str, list[str]]]]]] | None:
+    """'**Verkot:** A (x, y), B; M365: C, D' -> (otsake, [(ryhmän otsake, [(kohta, [sulkujen kohdat])])]).
+    None, jos rivi ei ole tätä muotoa (silloin riviin ei kosketa)."""
+    m = _LABEL.match(text)
+    if not m:
+        return None
+    groups = []
+    for g in _split_top(text[m.end():], ";"):
+        g = g.strip()
+        head = ""
+        hm = re.match(r"^([^,()]+?:)\s+", g)
+        if hm:
+            head, g = hm.group(1), g[hm.end():]
+        items = []
+        for it in _split_top(g, ","):
+            it = it.strip()
+            im = re.fullmatch(r"(.*?)\s*\((.*)\)", it)
+            items.append((im.group(1), [x.strip() for x in _split_top(im.group(2), ",")]) if im else (it, []))
+        groups.append((head, [i for i in items if i[0] or i[1]]))
+    return m.group(1).strip(), groups
+
+
+def render_skill_row(label: str, groups) -> str:
+    parts = []
+    for head, items in groups:
+        body = ", ".join(f"{c} ({', '.join(inner)})" if inner else c for c, inner in items)
+        parts.append(f"{head} {body}".strip())
+    return f"{label} " + "; ".join(parts)
+
+
+def _skill_aliases() -> dict[str, list[str]]:
+    """Osaamisprofiilin aliakset ('reititin*' -> Cisco), jotta suomenkielinen ilmoitus osuu englanninkieliseen taitoon."""
+    try:
+        import json
+        from .config import DATA
+        rows = json.loads((DATA / "skills.json").read_text(encoding="utf-8")).get("skills", [])
+        return {r["name"].lower(): [a for a in r.get("aliases", []) if a] for r in rows if r.get("name")}
+    except Exception:  # noqa: BLE001  (osaamisprofiili on valinnainen)
+        return {}
+
+
+# Tuotenimet, jotka ovat myös tavallisia sanoja tai muiden tuotteiden etuliitteitä ("cross-functional teams",
+# "Apache Kafka"): osuma vain isolla alkukirjaimella eikä toisen tuotteen nimenä
+_AMBIGUOUS = {
+    "teams": r"(?<![\w-])Teams\b", "word": r"(?<![\w-])Word\b", "excel": r"(?<![\w-])Excel\b",
+    "outlook": r"(?<![\w-])Outlook\b", "project": r"Microsoft Project|MS Project",
+    "prisma": r"(?i)prisma(?:\s+orm|\.io|\s+client|\s+schema)",   # Prisma on myös kauppaketju
+    "apache": r"Apache(?!\s+(?:Kafka|Spark|Airflow|Flink|Beam|Cassandra|Camel|Hadoop|NiFi|Iceberg|Superset|Pulsar|Solr|"
+              r"Lucene|Maven|Hive|HBase|Druid|Arrow|Parquet|Avro|Storm|Zookeeper|ActiveMQ))",
+}
+
+
+def _hits_ad(item: str, ad_low: str, skills: list[str], aliases: dict[str, list[str]], ad: str = "") -> bool:
+    low = item.lower().strip()
+    if low in _AMBIGUOUS:
+        return bool(re.search(_AMBIGUOUS[low], ad)) or any(k.lower() == low for k in skills)
+    if _present(item, ad_low) or any(_present(t, ad_low) for t in tech_terms(item) if t.lower() not in _AMBIGUOUS):
+        return True
+    if any(_present(k, low) for k in skills):
+        return True
+    for name, als in aliases.items():
+        if name in low or low in name:
+            for a in als:
+                pat = re.escape(a.lower().rstrip("*")) + (r"\w*" if a.endswith("*") else r"(?!\w)")
+                if re.search(r"(?<!\w)" + pat, ad_low):
+                    return True
+    return False
+
+
+def _skill_units(sections: list[Section]) -> list[Unit]:
+    return [u for s in sections if _is(s.title, SKILLS_SECTION) for u in s.units if u.included]
+
+
+def _hit_fn(ad_text: str, skills: list[str]):
+    ad_low, aliases = ad_text.lower(), _skill_aliases()
+    return lambda c, inner=(): _hits_ad(" ".join([c, *inner]), ad_low, skills, aliases, ad_text)
+
+
+def order_skill_items(sections: list[Section], ad_text: str, skills: list[str]) -> None:
+    """Rivin sisällä ilmoitukseen osuvat taidot ensin (sisältö ennallaan, vain järjestys)."""
+    if not ad_text.strip():
+        return
+    hit = _hit_fn(ad_text, skills)
+    for u in _skill_units(sections):
+        row = parse_skill_row(u.text)
+        if row:
+            label, groups = row
+            u.text = render_skill_row(label, [(h, sorted(items, key=lambda i: not hit(*i))) for h, items in groups])
+
+
+MIN_SKILL_ROWS = 5      # osaamisosio ei kutistu tätä lyhyemmäksi
+MIN_ROW_ITEMS = 3       # rivillä vähintään näin monta kohtaa (osumat ensin)
+MIN_INNER = 2           # sulkujen tarkennuksista vähintään näin monta
+
+
+def trim_skills(sections: list[Section], ad_text: str, skills: list[str], too_long, changes: list[dict],
+                stage: str = "rows") -> None:
+    """Tiivistä osaamisrivejä vain niin paljon kuin sivu vaatii. Ilmoitukseen tai korostettuihin taitoihin osuvaa
+    kohtaa ei poisteta koskaan. stage="rows": kokonaiset rivit, joilla ei ole yhtään osumaa (pisimmät ensin,
+    vähintään MIN_SKILL_ROWS jää). stage="items": osumattomat kohdat riveiltä ja sulkujen tarkennuksista
+    alarajoihin asti."""
+    if not ad_text.strip():
+        return
+    hit = _hit_fn(ad_text, skills)
+    rows = [(u, r) for u in _skill_units(sections) if (r := parse_skill_row(u.text))]
+    if stage == "rows":
+        empty = [u for u, r in rows if not any(hit(c, i) for _, items in r[1] for c, i in items)]
+        for u in sorted(empty, key=lambda x: -len(x.text)):
+            if not too_long() or sum(x.included for x, _ in rows) <= MIN_SKILL_ROWS:
+                return
+            u.included = False
+            changes.append({"kind": "fit", "id": u.id, "text": f"Osaamisrivi pois (yksi sivu): {u.text[:70]}"})
+        return
+    for u, (label, groups) in rows:
+        gone = []
+        for head, items in groups:
+            for k, (c, inner) in enumerate(items):          # ensin sulkujen tarkennukset
+                keep = [x for x in inner if hit(x)]
+                keep += [x for x in inner if x not in keep][:max(0, MIN_INNER - len(keep))]
+                if len(keep) < len(inner) and too_long():
+                    gone += [x for x in inner if x not in keep]
+                    items[k] = (c, [x for x in inner if x in keep])
+        for head, items in groups:                         # sitten kohdat lopusta alkaen
+            for it in reversed(list(items)):
+                if not too_long() or sum(len(x) for _, x in groups) <= MIN_ROW_ITEMS:
+                    break
+                if not hit(*it):
+                    items.remove(it)
+                    gone.append(it[0])
+        if gone:
+            u.text = render_skill_row(label, [g for g in groups if g[1]])
+            changes.append({"kind": "fit", "id": u.id, "text": f"Osaamisesta pois (yksi sivu): {', '.join(gone)}"})
+
+
 def fit_one_page(cv: CV, sections: list[Section], summary: str, ad_text: str, skills: list[str], embed=None,
                  lang: str = "en") -> list[dict]:
     """Rajaa CV yhdelle A4-sivulle. Vähiten ilmoitukseen liittyvä jää pois ensin; työhistorian nimikkeet, koulutus,
@@ -312,6 +465,11 @@ def fit_one_page(cv: CV, sections: list[Section], summary: str, ad_text: str, sk
         drop_project(min(live, key=lambda e: rel[e.id]))
     if size() <= PAGE_LINES:
         return changes
+    # sitten osaamisrivit, joilla ei ole yhtään ilmoitukseen osuvaa taitoa (ennen projektien rivejä)
+    too_long = lambda: size() > PAGE_LINES  # noqa: E731
+    trim_skills(sections, ad_text, skills, too_long, changes, "rows")
+    if not too_long():
+        return changes
 
     # sitten yksittäiset rivit: projektilta jää vähintään yksi, työpaikalta nimike ja ajat
     cand = [(e, u) for e in live for u in e.units if u.included] + [(e, u) for e in work for u in e.units if u.included]
@@ -323,6 +481,8 @@ def fit_one_page(cv: CV, sections: list[Section], summary: str, ad_text: str, sk
             continue
         u.included = False
         changes.append({"kind": "fit", "id": u.id, "text": f"Pois (yksi sivu): {u.text[:70]}"})
+    # projektien rivien jälkeen osumattomat kohdat osaamisriveiltä, ennen kokonaisten projektien poistoa
+    trim_skills(sections, ad_text, skills, too_long, changes, "items")
     while size() > PAGE_LINES and len(live) > MIN_PROJECTS:
         drop_project(min(live, key=lambda e: rel[e.id]))
     return changes
@@ -539,6 +699,7 @@ def assemble(base: CV, en: CV, plan: dict, summary_text: str | None, ad_text: st
     changes += rw_changes
     skills = focus(base, plan.get("focus_skills"))
     reorder_skills(sections, skills)
+    order_skill_items(sections, ad_text, skills)
     if skills:
         changes.append({"kind": "focus", "text": "Korostetut taidot: " + ", ".join(skills)})
     original = original_summary(base)

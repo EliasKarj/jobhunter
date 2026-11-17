@@ -194,3 +194,69 @@ def test_summary_reasons_not_duplicated():
     flags = cvtailor.check_summary("Third-year IT student. Warehouse work has taught me precision.", cv)
     reasons = [r for f in flags for r in f["reasons"] if "taught me" in r]
     assert len(reasons) == 1
+
+
+SKILLS_MD = """# A
+
+## Technical Skills
+
+- **Networking:** Cisco IOS routers and switches (VLAN, STP, OSPFv2), Wireshark, Modbus TCP
+- **Security:** nmap, Hydra, OpenSSL
+- **Programming:** Python, Java, C#
+- **Embedded:** Arduino (C), LTspice
+- **Office:** Microsoft 365: Excel, Word; Microsoft Project
+"""
+
+
+def _skill_rows(cv):
+    return [u for s in cv.sections for u in s.units]
+
+
+def test_skill_row_roundtrip_and_ordering():
+    cv = cvtailor.parse(SKILLS_MD)
+    for u in _skill_rows(cv):
+        assert cvtailor.render_skill_row(*cvtailor.parse_skill_row(u.text)) == u.text
+    cvtailor.order_skill_items(cv.sections, "Kokemus Wiresharkista ja Javasta on plussaa.", [])
+    rows = [u.text for u in _skill_rows(cv)]
+    assert rows[0].startswith("**Networking:** Wireshark,") and rows[2] == "**Programming:** Java, Python, C#"
+
+
+def _trim_all(cv, ad):
+    changes = []
+    for stage in ("rows", "items"):
+        cvtailor.trim_skills(cv.sections, ad, [], lambda: True, changes, stage)
+    return [u for u in _skill_rows(cv) if u.included], changes
+
+
+def test_trim_skills_keeps_ad_skills(monkeypatch):
+    monkeypatch.setattr(cvtailor, "MIN_SKILL_ROWS", 3)
+    monkeypatch.setattr(cvtailor, "MIN_ROW_ITEMS", 1)
+    monkeypatch.setattr(cvtailor, "MIN_INNER", 1)
+    kept, changes = _trim_all(cvtailor.parse(SKILLS_MD), "Java developer. VLAN knowledge is a plus. Excel.")
+    text = " ".join(u.text for u in kept)
+    assert len(kept) == 3                                         # osumattomat rivit pois alarajaan asti
+    assert "Java" in text and "VLAN" in text and "Excel" in text  # ilmoituksen taidot säilyvät aina
+    assert "Hydra" not in text and "LTspice" not in text and "Python" not in text and "STP" not in text
+    assert changes
+
+
+def test_trim_skills_default_minimums():
+    kept, _ = _trim_all(cvtailor.parse(SKILLS_MD), "Java developer.")
+    assert len(kept) == 5                                         # MIN_SKILL_ROWS
+    for u in kept:
+        items = [i for _, g in cvtailor.parse_skill_row(u.text)[1] for i in g]
+        assert len(items) >= min(cvtailor.MIN_ROW_ITEMS, 3) or u.text.startswith(("**Embedded", "**Office"))
+
+
+def test_ambiguous_product_names_need_exact_form():
+    hit = cvtailor._hit_fn("Work in cross-functional teams. Experience with Apache Kafka. A good word.", [])
+    assert not hit("Teams") and not hit("Apache") and not hit("Word")
+    hit = cvtailor._hit_fn("Tuntemus: Microsoft Teams, Word ja Apache-palvelin.", [])
+    assert hit("Teams") and hit("Word") and hit("Apache")
+
+
+def test_trim_skills_stops_when_page_fits():
+    cv = cvtailor.parse(SKILLS_MD)
+    before = [u.text for u in _skill_rows(cv)]
+    cvtailor.trim_skills(cv.sections, "Java developer", [], lambda: False, [])
+    assert [u.text for u in _skill_rows(cv) if u.included] == before

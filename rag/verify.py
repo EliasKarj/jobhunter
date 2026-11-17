@@ -91,7 +91,11 @@ def _has(term: str, text_low: str) -> bool:
 
 
 # full-stack tarkoittaa määritelmän mukaan sekä front endiä että back endiä
-_IMPLIED = {"frontend": ("fullstack",), "backend": ("fullstack",)}
+_M365 = ("microsoft 365", "m365", "office 365")
+_IMPLIED = {"frontend": ("fullstack",), "backend": ("fullstack",),
+            # CV:ssä "Microsoft 365" yhtenä kokonaisuutena: sen sovellusten maininta ei ole keksitty taito
+            **{k: _M365 for k in ("excel", "word", "powerpoint", "teams", "microsoftteams", "outlook", "onedrive",
+                                  "sharepoint", "msexcel", "msword", "microsoftexcel", "microsoftword")}}
 
 
 def _spellings(term: str) -> set[str]:
