@@ -194,13 +194,15 @@ export default function CvView() {
   const base = useQuery({ queryKey: ["cv-base"], queryFn: () => get<{ exists: boolean; path: string }>("/api/cv/base") });
   const ai = useAiStatus();
   const [runId, setRunId] = useState<string | null>(null);
+  // ajo käynnissä (valmiin ajon näkymä voi jäädä auki, eikä se saa estää uutta ajoa)
+  const [running, setRunning] = useState(false);
   const [runsKey, setRunsKey] = useState(0);
   // käynnissä oleva ajo jatkuu, vaikka sivu ladattaisiin uudelleen
   useEffect(() => {
-    setRunId(null);
+    setRunId(null); setRunning(false);
     if (!url) return;
     get<{ runs: { run_id: string; lang: string; status: string }[] }>("/api/cv/runs", { url })
-      .then((r) => { const live = r.runs.find((x) => x.lang === lang && x.status === "running"); if (live) setRunId(live.run_id); })
+      .then((r) => { const live = r.runs.find((x) => x.lang === lang && x.status === "running"); if (live) { setRunId(live.run_id); setRunning(true); } })
       .catch(() => { /* ajohistoria ei ole välttämätön */ });
   }, [url, lang]);
   const panelBlocked = lang === "fi" && !base.data?.exists;
@@ -210,14 +212,15 @@ export default function CvView() {
     if (params.get("auto") !== "1" || autoStarted.current || !q.isSuccess || base.isLoading) return;
     autoStarted.current = true;
     const next = new URLSearchParams(params); next.delete("auto"); setParams(next, { replace: true });
-    if (q.data === null && !runId && !panelBlocked) startPanel();
+    if (q.data === null && !running && !panelBlocked) startPanel();
   }, [q.isSuccess, q.data, base.isLoading]);  // eslint-disable-line
   const startPanel = async () => {
     setErr(null);
-    try { setRunId((await post<{ run_id: string }>("/api/cv/runs", { url, lang })).run_id); }
+    try { setRunId((await post<{ run_id: string }>("/api/cv/runs", { url, lang })).run_id); setRunning(true); }
     catch (e) { setErr(e); }
   };
   const runDone = (type: string) => {
+    setRunning(false);
     setRunsKey((k) => k + 1);
     if (type === "run_finished") { qc.invalidateQueries({ queryKey: ["cv", url, lang] }); toast("Paneeli valmis"); }
   };
@@ -296,14 +299,14 @@ export default function CvView() {
               : <p><b>Suomenkielistä pohjaa ei vielä ole.</b> Ensimmäisellä kerralla kone kääntää koko CV:n, ja sinä tarkistat käännöksen rivi riviltä. Tarkistettu käännös tallennetaan pohjaksi.</p>)}
             <div className="actions">
               <button className="btn primary" onClick={generate}>Räätälöi CV</button>
-              <button className="btn" onClick={startPanel} disabled={!!runId || panelBlocked}
+              <button className="btn" onClick={startPanel} disabled={running || panelBlocked}
                       title={panelBlocked ? "Tee ensin suomenkielinen pohja tavallisella räätälöinnillä" : undefined}>Räätälöi ja arvioi paneelilla</button>
             </div>
             <p className="muted" style={{ fontSize: 13 }}>Paneelissa neljä arvioijaa (faktantarkistaja, rekrytoija, tekninen haastattelija ja esihenkilö)
               lukee CV:n, ja räätälöijä korjaa löydökset enintään kahdesti. Kestää noin minuutin tai pari.</p>
           </div>
         )}
-        {runId && <PanelRun runId={runId} slow={ai.data?.llm.provider === "ollama"} onDone={runDone} onClose={() => setRunId(null)} />}
+        {runId && <PanelRun runId={runId} slow={ai.data?.llm.provider === "ollama"} onDone={runDone} onClose={() => { setRunId(null); setRunning(false); }} />}
         {cv && <div className="cv-scroll"><Paper cv={cv} edit={edit} toggle={toggle} onFit={setFill} ed={ed} /></div>}
       </div>
 
@@ -354,7 +357,7 @@ export default function CvView() {
               <button className="btn small" onClick={save} disabled={!dirty || busy}>Tallenna</button>
               <button className="btn small ghost" onClick={() => confirm("Räätälöidäänkö uudelleen? Nykyiset valinnat korvataan.") && generate()} disabled={busy}>Räätälöi uudelleen</button>
               <button className="btn small ghost" onClick={() => confirm("Ajetaanko paneeli? Valmis tulos korvaa nykyisen CV:n.") && startPanel()}
-                      disabled={busy || !!runId || panelBlocked}>Arvioi paneelilla</button>
+                      disabled={busy || running || panelBlocked}>Arvioi paneelilla</button>
             </div>
             <p className="muted mono" style={{ fontSize: 11.5, marginBottom: 0 }}>{cv.model} · lähde {cv.source}</p>
           </section>
