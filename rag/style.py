@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 
+from .fi_terms import PROMPT as FI_TERMS, unnatural
 from .llm import LLM
 
 # Fraasit (säännöllisinä lausekkeina). Pidetään täsmällisinä: sana "motivated" yksin ei ole klisee.
@@ -59,6 +60,8 @@ STYLE = {
 - Lyhyet virkkeet. Yksikään lause ei saa olla niin yleinen, että se sopisi kenelle tahansa hakijalle.""",
 }
 
+STYLE["fi"] += "\n" + FI_TERMS   # mitä termejä pidetään englanniksi (rag/fi_terms.py)
+
 
 # Kolmas persoona suomeksi: virkkeen alussa yksikön 3. persoonan verbi ("Rakentaa…", "Opiskelee…") tai
 # hakijaa kuvaava relatiivilause ("opiskelija, joka valmistuu…"). "sovellus, joka kerää" on sallittu.
@@ -96,6 +99,9 @@ def find(text: str, lang: str = "en") -> list[str]:
     if lang == "fi":
         out += [f"kolmas persoona: \"{w}\"" for w in third_person_fi(text)]
     own = _own()
+    if lang == "fi":   # pakotetut suomennokset ("taustapalvelu" -> backend); ei omien ilmausten poikkeusta, koska
+        # tyylinäytteisiin jäi esimerkki-ilmoituksen sanastoa, jota hakija ei ole itse valinnut
+        out += [f"termi: {t}" for t in unnatural(text)]
     for pat in CLICHES["en"] + (CLICHES["fi"] if lang == "fi" else []):
         for m in re.finditer(pat, text, re.I):
             frag = m.group(0)

@@ -385,7 +385,7 @@ def answer_url(url: str, question: str, s: config.Settings | None = None, others
     fi_cv = fi_wording(s) if lang == "fi" else ""
     ctx = form_context(lang, others, written)
     from .styleprofile import prompt_block
-    key = sha1("answer-5", g.hash(), llm.name, lang, question, fi_cv, ctx, prompt_block(lang, bool(LONG_FORM.search(question))))   # sama lomake uudelleen: vastaus heti
+    key = sha1("answer-6", g.hash(), llm.name, lang, question, fi_cv, ctx, prompt_block(lang, bool(LONG_FORM.search(question))))   # sama lomake uudelleen: vastaus heti
     hit = cache_get(st, key)
     if hit:
         return hit

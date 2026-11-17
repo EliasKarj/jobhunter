@@ -22,7 +22,7 @@ FICTIONAL = [
      "title": "Junior Full Stack -kehittäjä",
      "ad": "Pohjanmaan Ohjelmistopaja tekee verkkopalveluita teollisuuden asiakkaille. Haemme junior full stack "
            "-kehittäjää tiimiimme Vaasaan. Työssä kehität React- ja TypeScript-käyttöliittymiä sekä Python- ja "
-           "Node.js-taustapalveluja, jotka ajetaan Dockerilla. Arvostamme kiinnostusta tietokantoihin (PostgreSQL) ja "
+           "Node.js-backendejä, jotka ajetaan Dockerilla. Arvostamme kiinnostusta tietokantoihin (PostgreSQL) ja "
            "CI/CD-putkiin. Sopii valmistumassa olevalle tai vastavalmistuneelle. Hybridityö mahdollinen.",
      "questions": ["Vapaamuotoinen hakemuksesi tehtävään", "Miksi haet juuri tähän tehtävään?"]},
     {"id": "da1", "lang": "fi", "company": "Rannikon Energia Oy (keksitty)", "city": "Seinäjoki",

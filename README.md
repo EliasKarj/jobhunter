@@ -109,7 +109,7 @@ Kuvat on otettu demotilassa keksityllä esimerkkihenkilöllä.
 ## Testit ja evaluointi
 
 ```powershell
-python -m pytest -q          # 203 testiä, eivät tee API-kutsuja eivätkä käytä omaa dataa
+python -m pytest -q          # 206 testiä, eivät tee API-kutsuja eivätkä käytä omaa dataa
 ```
 
 Rankingia on mitattu 89 käsin merkityllä ilmoituksella. Kärjen osuvuus (NDCG@10) oli avainsanoilla 0,66, hybridillä

@@ -64,3 +64,24 @@ def test_finnish_third_person_is_found(text, hit):
 ])
 def test_first_person_finnish_is_not_flagged(text):
     assert style.third_person_fi(text) == []
+
+
+def test_forced_finnish_terms_flagged_with_natural_form():
+    from rag import style
+    found = style.find("Osallistuin FastAPI-taustapalvelun tekoon ja tein vetopyyntöjä täyden pinon sovellukseen.", "fi")
+    assert "termi: taustapalvelun → backend" in found
+    assert any(f.startswith("termi: vetopyyntöjä") for f in found) and any("täyden pinon" in f for f in found)
+
+
+def test_established_terms_not_flagged():
+    from rag import style
+    text = ("Tein React-frontendin ja FastAPI-backendin, kontitin sovelluksen ja rakensin CI/CD-putken. "
+            "Työ tehtiin pull requesteina, ja rajapinta julkaistiin pilvipalveluun.")
+    assert not [f for f in style.find(text, "fi") if f.startswith("termi:")]
+    assert style.find("The backend service runs in a container.", "en") == []
+
+
+def test_term_guide_in_finnish_prompts():
+    from rag import cvtailor, style
+    assert "TERMIT" in style.STYLE["fi"] and "TERMIT" in cvtailor.TRANSLATE_SYSTEM
+    assert "TERMIT" not in style.STYLE["en"]

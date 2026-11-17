@@ -18,6 +18,7 @@ import numpy as np
 
 from .claims import cliches, unsupported_claims
 from .llm import LLM
+from .fi_terms import PROMPT as FI_TERMS
 from .style import STYLE, polish, third_person_fi
 from .verify import _present, check, tech_terms
 
@@ -308,6 +309,7 @@ TRANSLATE_SYSTEM = """Käännä CV:n rivit suomeksi. Säännöt:
 - Säilytä **lihavoinnit** samoissa kohdissa.
 - CV-tyyli: lyhyet lauseet, ei minä-muotoa, jos alkuperäisessä ei ole sitä.
 Palauta jokainen rivi sen tunnisteella."""
+TRANSLATE_SYSTEM += "\n\n" + FI_TERMS   # backend, pull request jne. pysyvät englanniksi (rag/fi_terms.py)
 
 
 def _translate_schema(ids: list[str]) -> dict:
